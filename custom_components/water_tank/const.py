@@ -1,0 +1,11 @@
+DOMAIN = "water_tank"
+CONF_LEVEL_ENTITY = "level_entity"
+CONF_DISTANCE_ENTITY = "distance_entity"
+CONF_PUMP_ENTITY = "pump_entity"
+CONF_TANK_CAPACITY = "tank_capacity"
+CONF_MAX_DROP_PERCENT = "max_drop_percent"
+CONF_MIN_CONSUMPTION_LITERS = "min_consumption_liters"
+
+DEFAULT_CAPACITY = 1000.0
+DEFAULT_MAX_DROP_PERCENT = 5.0
+DEFAULT_MIN_CONSUMPTION_LITERS = 0.5

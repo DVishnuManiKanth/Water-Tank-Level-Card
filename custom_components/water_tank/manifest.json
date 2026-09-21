@@ -1,0 +1,12 @@
+{
+  "domain": "water_tank",
+  "name": "Water Tank",
+  "version": "1.1.0",
+  "documentation": "https://github.com/DVishnuManiKanth/Water-Tank-Level-Card",
+  "issue_tracker": "https://github.com/DVishnuManiKanth/Water-Tank-Level-Card/issues",
+  "codeowners": [
+    "@DVishnuManiKanth"
+  ],
+  "config_flow": true,
+  "iot_class": "local_polling"
+}
