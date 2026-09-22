@@ -11,6 +11,13 @@ const DEFAULT_CONFIG = {
   distance_entity: "",
   pump_entity: "",
   consumption_entity: "",
+  show_distance: true,
+  show_daily_average: true,
+  show_today_consumption: true,
+  show_seven_day_consumption: true,
+  daily_average_attribute: "seven_day_average_l_day",
+  today_consumption_attribute: "today_liters",
+  seven_day_consumption_attribute: "seven_day_liters",
   name: "Water Tank",
   capacity_liters: 1000,
   layout: "columns",
@@ -67,6 +74,25 @@ class WaterTankCard extends HTMLElement {
               name: "consumption_entity",
               selector: { entity: { domain: "sensor" } },
             },
+          ],
+        },
+        {
+          type: "expandable",
+          name: "metrics",
+          title: "Metrics to show",
+          flatten: true,
+          schema: [
+            { name: "show_distance", selector: { boolean: {} } },
+            {
+              name: "distance_entity",
+              selector: { entity: { domain: "sensor" } },
+            },
+            { name: "show_daily_average", selector: { boolean: {} } },
+            { name: "daily_average_attribute", selector: { text: {} } },
+            { name: "show_today_consumption", selector: { boolean: {} } },
+            { name: "today_consumption_attribute", selector: { text: {} } },
+            { name: "show_seven_day_consumption", selector: { boolean: {} } },
+            { name: "seven_day_consumption_attribute", selector: { text: {} } },
           ],
         },
         {
@@ -170,6 +196,13 @@ class WaterTankCard extends HTMLElement {
         ({
           level_entity: "Water level entity",
           distance_entity: "Distance entity",
+          show_distance: "Show distance",
+          show_daily_average: "Show daily average",
+          show_today_consumption: "Show today's consumption",
+          show_seven_day_consumption: "Show 7-day consumption",
+          daily_average_attribute: "Daily average attribute",
+          today_consumption_attribute: "Today attribute",
+          seven_day_consumption_attribute: "7-day attribute",
           pump_entity: "Pump entity",
           consumption_entity: "Consumption entity",
           name: "Tank name",
@@ -182,10 +215,17 @@ class WaterTankCard extends HTMLElement {
       computeHelper: (schema) =>
         ({
           level_entity: "Sensor reporting tank level as 0–100%.",
-          distance_entity: "Optional distance sensor, such as 36 cm.",
+          distance_entity: "Select the distance sensor you want to display.",
+          show_distance: "Turn the distance metric on or off.",
+          show_daily_average: "Show the selected consumption sensor attribute as L/d.",
+          show_today_consumption: "Show today's consumption from the selected attribute.",
+          show_seven_day_consumption: "Show the 7-day total from the selected attribute.",
+          daily_average_attribute: "Default: seven_day_average_l_day",
+          today_consumption_attribute: "Default: today_liters",
+          seven_day_consumption_attribute: "Default: seven_day_liters",
           pump_entity: "Optional pump entity. ON is shown as Pump ON.",
           consumption_entity:
-            "Optional Water Consumption sensor. Uses today_liters, seven_day_liters and seven_day_average_l_day attributes.",
+            "Select the Water Consumption sensor used by the three consumption metrics.",
           card_height: "Use auto, 500px, 45vh, etc.",
           accent_color: "Any CSS color such as #2196f3.",
           water_top_color: "Water gradient top color.",
@@ -210,6 +250,13 @@ class WaterTankCard extends HTMLElement {
       distance_entity: "sensor.esp8266_text_tank_water_level_distance",
       pump_entity: "switch.borewell_p110",
       consumption_entity: "",
+      show_distance: true,
+      show_daily_average: true,
+      show_today_consumption: true,
+      show_seven_day_consumption: true,
+      daily_average_attribute: "seven_day_average_l_day",
+      today_consumption_attribute: "today_liters",
+      seven_day_consumption_attribute: "seven_day_liters",
       name: "Water Tank",
       capacity_liters: 1000,
       layout: "columns",
@@ -358,9 +405,9 @@ class WaterTankCard extends HTMLElement {
     const fill = level;
     const distanceText = Number.isFinite(distance) ? this._fmt(distance, 1) + " cm" : "—";
     const updated = this._relativeTime(levelState?.last_changed);
-    const today = this._metric(consumptionState, "today_liters");
-    const seven = this._metric(consumptionState, "seven_day_liters");
-    const average = this._metric(consumptionState, "seven_day_average_l_day");
+    const today = this._metric(consumptionState, c.today_consumption_attribute || "today_liters");
+    const seven = this._metric(consumptionState, c.seven_day_consumption_attribute || "seven_day_liters");
+    const average = this._metric(consumptionState, c.daily_average_attribute || "seven_day_average_l_day");
 
     const statusText = pumpState ? (pumpOn ? "Pump ON" : "Pump OFF") : "Pump —";
     const statusClass = pumpOn ? "pump-on" : "pump-off";
@@ -461,15 +508,16 @@ class WaterTankCard extends HTMLElement {
             </section>
             <section class="side" style="display:${c.show_metrics || c.show_settings ? "flex" : "none"}">
               <div class="top-metrics" style="display:${c.show_metrics ? "grid" : "none"}">
-                <div class="metric"><div class="metric-label">Daily avg</div><div class="metric-value">${average === "—" ? "—" : average + " L/d"}</div></div>
-                <div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven === "—" ? "—" : seven + " L"}</div></div>
-                <div class="metric"><div class="metric-label">Distance</div><div class="metric-value">${distanceText}</div></div>
+                ${c.show_daily_average ? `<div class="metric"><div class="metric-label">Daily avg</div><div class="metric-value">${average === "—" ? "—" : average + " L/d"}</div></div>` : ""}
+                ${c.show_seven_day_consumption ? `<div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven === "—" ? "—" : seven + " L"}</div></div>` : ""}
+                ${c.show_distance ? `<div class="metric"><div class="metric-label">Distance</div><div class="metric-value">${distanceText}</div></div>` : ""}
+                ${c.show_today_consumption ? `<div class="metric"><div class="metric-label">Today</div><div class="metric-value">${today === "—" ? "—" : today + " L"}</div></div>` : ""}
               </div>
               <div class="settings" style="display:${c.show_settings ? "flex" : "none"}">
                 <div class="setting"><span>Source</span><b>Water Level Sensor</b></div>
                 <div class="setting"><span>Range</span><b>0 → 100%</b></div>
                 <div class="setting"><span>Level</span><b>${this._fmt(level, 1)}%</b></div>
-                <div class="setting"><span>Today</span><b>${today === "—" ? "—" : today + " L"}</b></div>
+                <div class="setting"><span>Distance</span><b>${distanceText}</b></div>
               </div>
             </section>
           </div>
