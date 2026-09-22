@@ -2,5 +2,6 @@
   "name": "Water Tank Level Card",
   "content_in_root": true,
   "filename": "water-tank-card.js",
-  "render_readme": true
+  "render_readme": true,
+  "type": "plugin"
 }
