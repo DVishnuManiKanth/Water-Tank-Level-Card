@@ -5,9 +5,9 @@ Combined Home Assistant HACS project: animated tank card + water-consumption sen
 ## HACS
 Repository: https://github.com/DVishnuManiKanth/Water-Tank-Level-Card
 
-Install as a custom **Integration** repository, then restart Home Assistant.
+Install this repository in HACS as a **Dashboard** (Plugin) repository. The dashboard card is installed as `Water-Tank-Level-Card.js`.
 
-## Integration
+## Water Tank Integration
 Add **Water Tank** from Settings → Devices & services → Add Integration.
 
 For the user's 1000 L setup:
@@ -20,7 +20,14 @@ For the user's 1000 L setup:
 
 The sensor exposes total consumption plus attributes `today_liters`, `seven_day_liters`, and `seven_day_average_l_day`.
 
-## Card
+## Dashboard Card
+
+After installing through HACS, the card resource is:
+`/hacsfiles/Water-Tank-Level-Card/Water-Tank-Level-Card.js`
+
+HACS custom repository type: **Dashboard**.
+
+
 ```yaml
 type: custom:water-tank-card
 level_entity: sensor.esp8266_text_tank_water_level
