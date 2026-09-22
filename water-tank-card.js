@@ -17,6 +17,19 @@ const DEFAULT_CONFIG = {
   card_height: "auto",
   border_radius: 24,
   accent_color: "#2196f3",
+  water_top_color: "#64b5f6",
+  water_bottom_color: "#0d47a1",
+  card_background: "#07101d",
+  compactness: "compact",
+  show_subtitle: true,
+  show_pump_status: true,
+  show_metrics: true,
+  show_settings: true,
+  show_footer: false,
+  show_marks: true,
+  show_bubbles: true,
+  show_wave: true,
+  show_flow: true,
 };
 
 class WaterTankCard extends HTMLElement {
@@ -95,10 +108,7 @@ class WaterTankCard extends HTMLElement {
           title: "Appearance",
           flatten: true,
           schema: [
-            {
-              name: "card_height",
-              selector: { text: {} },
-            },
+            { name: "card_height", selector: { text: {} } },
             {
               name: "border_radius",
               selector: {
@@ -111,9 +121,47 @@ class WaterTankCard extends HTMLElement {
                 },
               },
             },
+            { name: "accent_color", selector: { text: {} } },
+            { name: "water_top_color", selector: { text: {} } },
+            { name: "water_bottom_color", selector: { text: {} } },
+            { name: "card_background", selector: { text: {} } },
+          ],
+        },
+        {
+          type: "expandable",
+          name: "sections",
+          title: "Show / hide sections",
+          flatten: true,
+          schema: [
+            { name: "show_subtitle", selector: { boolean: {} } },
+            { name: "show_pump_status", selector: { boolean: {} } },
+            { name: "show_metrics", selector: { boolean: {} } },
+            { name: "show_settings", selector: { boolean: {} } },
+            { name: "show_footer", selector: { boolean: {} } },
+            { name: "show_marks", selector: { boolean: {} } },
+            { name: "show_bubbles", selector: { boolean: {} } },
+            { name: "show_wave", selector: { boolean: {} } },
+            { name: "show_flow", selector: { boolean: {} } },
+          ],
+        },
+        {
+          type: "expandable",
+          name: "density",
+          title: "Compactness",
+          flatten: true,
+          schema: [
             {
-              name: "accent_color",
-              selector: { text: {} },
+              name: "compactness",
+              selector: {
+                select: {
+                  options: [
+                    { value: "ultra", label: "Ultra compact" },
+                    { value: "compact", label: "Compact" },
+                    { value: "comfortable", label: "Comfortable" },
+                  ],
+                  mode: "dropdown",
+                },
+              },
             },
           ],
         },
@@ -139,7 +187,11 @@ class WaterTankCard extends HTMLElement {
           consumption_entity:
             "Optional Water Consumption sensor. Uses today_liters, seven_day_liters and seven_day_average_l_day attributes.",
           card_height: "Use auto, 500px, 45vh, etc.",
-          accent_color: "CSS color such as #2196f3.",
+          accent_color: "Any CSS color such as #2196f3.",
+          water_top_color: "Water gradient top color.",
+          water_bottom_color: "Water gradient bottom color.",
+          card_background: "Main card background color.",
+          compactness: "Ultra compact is best for a narrow mobile dashboard.",
         })[schema.name],
       assertConfig: (config) => {
         if (!config.level_entity) {
@@ -164,6 +216,19 @@ class WaterTankCard extends HTMLElement {
       card_height: "auto",
       border_radius: 24,
       accent_color: "#2196f3",
+      water_top_color: "#64b5f6",
+      water_bottom_color: "#0d47a1",
+      card_background: "#07101d",
+      compactness: "compact",
+      show_subtitle: true,
+      show_pump_status: true,
+      show_metrics: true,
+      show_settings: true,
+      show_footer: false,
+      show_marks: true,
+      show_bubbles: true,
+      show_wave: true,
+      show_flow: true,
     };
   }
 
@@ -278,12 +343,7 @@ class WaterTankCard extends HTMLElement {
       pumpState?.state,
       consumptionState?.state,
       JSON.stringify(consumptionState?.attributes || {}),
-      c.name,
-      c.layout,
-      c.capacity_liters,
-      c.card_height,
-      c.border_radius,
-      c.accent_color,
+      JSON.stringify(c),
     ].join("|");
 
     if (!force && signature === this._lastSignature) return;
@@ -292,6 +352,9 @@ class WaterTankCard extends HTMLElement {
     const name = this._esc(c.name || "Water Tank");
     const radius = Number(c.border_radius ?? 24);
     const accent = this._esc(c.accent_color || "#2196f3");
+    const waterTop = this._esc(c.water_top_color || "#64b5f6");
+    const waterBottom = this._esc(c.water_bottom_color || "#0d47a1");
+    const cardBackground = this._esc(c.card_background || "#07101d");
     const fill = level;
     const distanceText = Number.isFinite(distance) ? this._fmt(distance, 1) + " cm" : "—";
     const updated = this._relativeTime(levelState?.last_changed);
@@ -302,43 +365,43 @@ class WaterTankCard extends HTMLElement {
     const statusText = pumpState ? (pumpOn ? "Pump ON" : "Pump OFF") : "Pump —";
     const statusClass = pumpOn ? "pump-on" : "pump-off";
 
-    const bubbles = Array.from({ length: 12 }, (_, i) => {
+    const bubbles = c.show_bubbles ? Array.from({ length: 12 }, (_, i) => {
       const left = 8 + ((i * 17) % 84);
       const size = 3 + (i % 4);
       const delay = (i * 0.75).toFixed(2);
       const duration = (4 + (i % 4)).toFixed(1);
       return `<i class="bubble" style="left:${left}%;width:${size}px;height:${size}px;animation-delay:${delay}s;animation-duration:${duration}s"></i>`;
-    }).join("");
+    }).join("") : "";
 
-    const marks = [100, 75, 50, 25, 0].map((m) =>
+    const marks = c.show_marks ? [100, 75, 50, 25, 0].map((m) =>
       `<span style="bottom:${m}%"><b></b>${m}</span>`
     ).join("");
 
     this.shadowRoot.innerHTML = `
       <style>
-        :host { display:block; --wt-accent:${accent}; --wt-bg:rgba(7,16,29,.96); --wt-panel:rgba(255,255,255,.055); --wt-line:rgba(255,255,255,.10); --wt-text:rgba(255,255,255,.96); --wt-muted:rgba(220,235,250,.62); }
+        :host { display:block; --wt-accent:${accent}; --wt-bg:${cardBackground}; --wt-panel:rgba(255,255,255,.055); --wt-line:rgba(255,255,255,.10); --wt-text:rgba(255,255,255,.96); --wt-muted:rgba(220,235,250,.62); }
         * { box-sizing:border-box; }
         ha-card { overflow:hidden; height:${this._esc(c.card_height || "auto")};
           min-height:0; border-radius:${radius}px; padding:0; color:var(--wt-text);
           background:radial-gradient(circle at 8% 0%,rgba(255,255,255,.07),transparent 30%),radial-gradient(circle at 100% 100%,color-mix(in srgb,var(--wt-accent) 12%,transparent),transparent 38%),var(--wt-bg);
           border:1px solid var(--wt-line); box-shadow:0 10px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.06); }
-        .shell { padding:10px 12px; }
+        .shell { padding:${c.compactness === "ultra" ? "6px 8px" : c.compactness === "comfortable" ? "12px 14px" : "9px 10px"}; }
         .header { display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px; }
         .title { font-size:17px;font-weight:800;line-height:1.1; }
         .subtitle { color:var(--wt-muted);font-size:9px;margin-top:3px; }
-        .status { display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid var(--wt-line);background:var(--wt-panel);font-size:9px;font-weight:800;white-space:nowrap; }
+        .status { display:${c.show_pump_status ? "flex" : "none"};align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid var(--wt-line);background:var(--wt-panel);font-size:9px;font-weight:800;white-space:nowrap; }
         .dot { width:6px;height:6px;border-radius:50%;background:#8793a1; }
         .pump-on .dot { background:#55d66f;box-shadow:0 0 8px rgba(85,214,111,.7);animation:pulse 1.6s infinite; }
         .pump-on { color:#bff7c8;border-color:rgba(85,214,111,.30);background:rgba(85,214,111,.10); }
         .main { display:grid;grid-template-columns:minmax(145px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
-        .hero { min-height:205px;border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
+        .hero { min-height:${c.compactness === "ultra" ? "150px" : c.compactness === "comfortable" ? "205px" : "180px"};border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
         .hero-glow { position:absolute;width:150px;height:150px;border-radius:50%;background:var(--wt-accent);opacity:.07;filter:blur(30px); }
         .tank-wrap { position:relative;width:105px;height:178px; }
         .tank { position:absolute;inset:0;overflow:hidden;border-radius:22px 22px 18px 18px;border:2px solid rgba(255,255,255,.27);background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.025) 38%,rgba(255,255,255,.07));box-shadow:inset 8px 0 15px rgba(255,255,255,.045),inset -8px 0 15px rgba(0,0,0,.16),0 10px 22px rgba(0,0,0,.22); }
         .tank::before { content:"";position:absolute;left:10%;right:10%;top:5px;height:7px;border-radius:50%;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.05);z-index:5; }
-        .water { position:absolute;left:0;right:0;bottom:0;height:${fill}%;background:linear-gradient(180deg,rgba(100,181,246,.92),rgba(33,150,243,.78) 45%,rgba(13,71,161,.88));transition:height 1.2s cubic-bezier(.2,.7,.2,1);box-shadow:0 -5px 18px rgba(33,150,243,.22); }
-        .water::before { content:"";position:absolute;left:-12%;top:-6px;width:124%;height:13px;border-radius:50%;background:rgba(170,225,255,.62);box-shadow:0 0 10px rgba(120,205,255,.45);animation:wave 3s ease-in-out infinite; }
-        .water::after { content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 28px,rgba(255,255,255,.035) 29px 32px);animation:flow 7s linear infinite; }
+        .water { position:absolute;left:0;right:0;bottom:0;height:${fill}%;background:linear-gradient(180deg,${waterTop},${waterBottom});transition:height 1.2s cubic-bezier(.2,.7,.2,1);box-shadow:0 -5px 18px rgba(33,150,243,.22); }
+        .water::before { content:"";position:absolute;left:-12%;top:-6px;width:124%;height:13px;border-radius:50%;background:rgba(170,225,255,.62);box-shadow:0 0 10px rgba(120,205,255,.45);animation:${c.show_wave ? "wave 3s ease-in-out infinite" : "none"}; }
+        .water::after { content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 28px,rgba(255,255,255,.035) 29px 32px);animation:${c.show_flow ? "flow 7s linear infinite" : "none"}; }
         .bubble { position:absolute;bottom:4%;border-radius:50%;background:rgba(255,255,255,.5);opacity:0;animation:rise 5s linear infinite;z-index:2; }
         .tank-value { position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 2px 8px rgba(0,0,0,.45); }
         .percent { font-size:27px;font-weight:900;line-height:1; }
@@ -357,6 +420,7 @@ class WaterTankCard extends HTMLElement {
         .setting b { font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
         .bottom { display:flex;justify-content:space-between;align-items:center;gap:8px;padding:1px 2px 0;color:var(--wt-muted);font-size:9px; }
         .bottom strong { color:var(--wt-text);font-size:12px; }
+        .footer { justify-content:space-between;color:var(--wt-muted);font-size:8px;padding-top:4px; }
         @keyframes wave { 0%,100% { transform:translateX(-4%) rotate(-1deg); }50% { transform:translateX(4%) rotate(1deg); } }
         @keyframes flow { to { background-position:180px 0; } }
         @keyframes rise { 0% { transform:translateY(0) scale(.7);opacity:0; }12% { opacity:.55; }90% { opacity:.08; }100% { transform:translateY(-160px) scale(1.15);opacity:0; } }
@@ -374,7 +438,7 @@ class WaterTankCard extends HTMLElement {
           <div class="header">
             <div>
               <div class="title">${name}</div>
-              <div class="subtitle">Live tank level • ${this._fmt(capacity, 0)} L capacity</div>
+              <div class="subtitle" style="display:${c.show_subtitle ? "block" : "none"}">Live tank level • ${this._fmt(capacity, 0)} L capacity</div>
             </div>
             <div class="status ${statusClass}">
               <span class="dot"></span>${statusText}
@@ -395,13 +459,13 @@ class WaterTankCard extends HTMLElement {
                 <div class="marks">${marks}</div>
               </div>
             </section>
-            <section class="side">
-              <div class="top-metrics">
+            <section class="side" style="display:${c.show_metrics || c.show_settings ? "flex" : "none"}">
+              <div class="top-metrics" style="display:${c.show_metrics ? "grid" : "none"}">
                 <div class="metric"><div class="metric-label">Daily avg</div><div class="metric-value">${average === "—" ? "—" : average + " L/d"}</div></div>
                 <div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven === "—" ? "—" : seven + " L"}</div></div>
                 <div class="metric"><div class="metric-label">Distance</div><div class="metric-value">${distanceText}</div></div>
               </div>
-              <div class="settings">
+              <div class="settings" style="display:${c.show_settings ? "flex" : "none"}">
                 <div class="setting"><span>Source</span><b>Water Level Sensor</b></div>
                 <div class="setting"><span>Range</span><b>0 → 100%</b></div>
                 <div class="setting"><span>Level</span><b>${this._fmt(level, 1)}%</b></div>
@@ -410,49 +474,9 @@ class WaterTankCard extends HTMLElement {
             </section>
           </div>
           <div class="bottom"><span><strong>${this._fmt(liters, 0)}</strong> Liter left</span><span>Updated ${updated}</span></div>
-                </div>
-                <div class="marks">${marks}</div>
-              </div>
-            </section>
-
-            <section class="side">
-              <div class="big-number">
-                <div class="big-label">Water remaining</div>
-                <div class="big-value">${this._fmt(liters, 0)} <small>/ ${this._fmt(capacity, 0)} L</small></div>
-              </div>
-
-              <div class="metrics">
-                <div class="metric">
-                  <div class="metric-label">Distance</div>
-                  <div class="metric-value">${distanceText}</div>
-                </div>
-                <div class="metric">
-                  <div class="metric-label">Level</div>
-                  <div class="metric-value">${this._fmt(level, 1)}%</div>
-                </div>
-                <div class="metric">
-                  <div class="metric-label">Today</div>
-                  <div class="metric-value">${today === "—" ? "—" : today + " L"}</div>
-                </div>
-                <div class="metric">
-                  <div class="metric-label">7 Days</div>
-                  <div class="metric-value">${seven === "—" ? "—" : seven + " L"}</div>
-                </div>
-                <div class="metric">
-                  <div class="metric-label">Average</div>
-                  <div class="metric-value">${average === "—" ? "—" : average + " L/d"}</div>
-                </div>
-                <div class="metric">
-                  <div class="metric-label">Updated</div>
-                  <div class="metric-value">${updated}</div>
-                </div>
-              </div>
-
-              <div class="footer">
-                <span>Animated glass tank</span>
-                <span>Home Assistant</span>
-              </div>
-            </section>
+          <div class="footer" style="display:${c.show_footer ? "flex" : "none"}">
+            <span>Animated glass tank</span>
+            <span>Home Assistant</span>
           </div>
         </div>
       </ha-card>
@@ -468,7 +492,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: CARD_TYPE,
   name: "Water Tank Card",
-  description: "Animated glass water tank with live level, pump and consumption metrics.",
+  description: "Compact animated glass water tank with full visual editor controls.",
   preview: true,
   documentationURL: "https://github.com/DVishnuManiKanTh/Water-Tank-Level-Card",
   getEntitySuggestion: (hass, entityId) => {
