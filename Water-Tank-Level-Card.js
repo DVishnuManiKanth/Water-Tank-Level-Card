@@ -26,6 +26,7 @@ class WaterTankCard extends HTMLElement {
     this._hass = undefined;
     this._config = {};
     this._lastSignature = "";
+    this._relativeTimer = null;
   }
 
   static getConfigForm() {
@@ -173,6 +174,31 @@ class WaterTankCard extends HTMLElement {
     }
     this._config = { ...DEFAULT_CONFIG, ...config };
     this._render(true);
+    this._startRelativeTimer();
+  }
+
+  connectedCallback() {
+    this._startRelativeTimer();
+  }
+
+  disconnectedCallback() {
+    if (this._relativeTimer) {
+      clearInterval(this._relativeTimer);
+      this._relativeTimer = null;
+    }
+  }
+
+  _startRelativeTimer() {
+    if (this._relativeTimer) return;
+    this._relativeTimer = setInterval(() => this._updateRelativeTime(), 1000);
+  }
+
+  _updateRelativeTime() {
+    if (!this._hass || !this._config.level_entity) return;
+    const el = this.shadowRoot?.querySelector("#updated-time");
+    if (!el) return;
+    const levelState = this._state(this._config.level_entity);
+    el.textContent = "Updated " + this._relativeTime(levelState?.last_changed);
   }
 
   set hass(value) {
@@ -230,9 +256,16 @@ class WaterTankCard extends HTMLElement {
   _relativeTime(ts) {
     if (!ts) return "—";
     const seconds = Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
-    if (seconds < 60) return "just now";
-    if (seconds < 3600) return Math.floor(seconds / 60) + " min ago";
-    if (seconds < 86400) return Math.floor(seconds / 3600) + " h ago";
+    if (seconds < 60) return seconds + " sec ago";
+    if (seconds < 3600) {
+      const minutes = Math.floor(seconds / 60);
+      return minutes + " min ago";
+    }
+    if (seconds < 86400) {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return minutes ? hours + " h " + minutes + " min ago" : hours + " h ago";
+    }
     return Math.floor(seconds / 86400) + " d ago";
   }
 
@@ -409,7 +442,7 @@ class WaterTankCard extends HTMLElement {
               </div>
             </section>
           </div>
-          <div class="bottom"><span><strong>${this._fmt(liters, 0)}</strong> Liter left</span><span>Updated ${updated}</span></div>
+          <div class="bottom"><span><strong>${this._fmt(liters, 0)}</strong> Liter left</span><span id="updated-time">Updated ${updated}</span></div>
                 </div>
         </div>
       </ha-card>
