@@ -1,1249 +1,1948 @@
+/*
+ * Water Tank Level Card
+ * Custom Lovelace card with built-in Home Assistant visual editor.
+ *
+ * Card type:
+ *   custom:water-tank-card
+ *
+ * Designed for Home Assistant 2026.x
+ */
+
+const CARD_TYPE = "water-tank-card";
+
+const DEFAULT_CONFIG = {
+  type: `custom:${CARD_TYPE}`,
+  level_entity: "",
+  distance_entity: "",
+  pump_entity: "",
+  name: "Water Tank",
+  capacity_liters: 1000,
+  card_height: "500px",
+  tank_height: "360px",
+  tank_width: "210px",
+  border_radius: 26,
+  background:
+    "linear-gradient(145deg, rgba(20,35,52,0.96), rgba(5,15,27,0.98))",
+};
+
 class WaterTankCard extends HTMLElement {
+  constructor() {
+    super();
+
+    this.attachShadow({ mode: "open" });
+
+    this._hass = undefined;
+    this._config = {};
+    this._lastSignature = "";
+  }
+
+  /* =========================================================
+     HOME ASSISTANT VISUAL EDITOR
+     ========================================================= */
+
+  static getConfigForm() {
+    return {
+      schema: [
+        {
+          type: "expandable",
+          name: "entities",
+          title: "Tank entities",
+          flatten: true,
+
+          schema: [
+            {
+              name: "level_entity",
+              required: true,
+
+              selector: {
+                entity: {
+                  domain: "sensor",
+                },
+              },
+            },
+
+            {
+              name: "distance_entity",
+
+              selector: {
+                entity: {
+                  domain: "sensor",
+                },
+              },
+            },
+
+            {
+              name: "pump_entity",
+
+              selector: {
+                entity: {
+                  domain: ["switch", "input_boolean"],
+                },
+              },
+            },
+          ],
+        },
+
+        {
+          type: "expandable",
+          name: "tank",
+          title: "Tank settings",
+          flatten: true,
+
+          schema: [
+            {
+              name: "name",
+
+              selector: {
+                text: {},
+              },
+            },
+
+            {
+              name: "capacity_liters",
+
+              selector: {
+                number: {
+                  min: 1,
+                  max: 100000,
+                  step: 1,
+                  mode: "box",
+                  unit_of_measurement: "L",
+                },
+              },
+            },
+          ],
+        },
+
+        {
+          type: "expandable",
+          name: "appearance",
+          title: "Appearance",
+          flatten: true,
+
+          schema: [
+            {
+              name: "card_height",
+
+              selector: {
+                text: {},
+              },
+            },
+
+            {
+              name: "tank_height",
+
+              selector: {
+                text: {},
+              },
+            },
+
+            {
+              name: "tank_width",
+
+              selector: {
+                text: {},
+              },
+            },
+
+            {
+              name: "border_radius",
+
+              selector: {
+                number: {
+                  min: 0,
+                  max: 60,
+                  step: 1,
+                  mode: "slider",
+                  unit_of_measurement: "px",
+                },
+              },
+            },
+
+            {
+              name: "background",
+
+              selector: {
+                text: {
+                  multiline: true,
+                },
+              },
+            },
+          ],
+        },
+      ],
+
+      computeLabel: (schema) => {
+        const labels = {
+          level_entity: "Water level entity",
+          distance_entity: "Distance entity",
+          pump_entity: "Pump entity",
+          name: "Tank name",
+          capacity_liters: "Tank capacity",
+          card_height: "Card height",
+          tank_height: "Tank height",
+          tank_width: "Tank width",
+          border_radius: "Corner radius",
+          background: "Card background",
+        };
+
+        return labels[schema.name] || schema.name;
+      },
+
+      computeHelper: (schema) => {
+        const helpers = {
+          level_entity:
+            "Sensor should normally report the tank level as 0–100%.",
+
+          distance_entity:
+            "Optional distance sensor, for example 36 cm.",
+
+          pump_entity:
+            "Optional pump entity. ON is shown as Pump ON.",
+
+          card_height:
+            "CSS size such as 500px, 45vh, or auto.",
+
+          tank_height:
+            "CSS size such as 360px.",
+
+          tank_width:
+            "CSS size such as 210px.",
+
+          background:
+            "CSS background. A linear-gradient() gives the glass effect.",
+        };
+
+        return helpers[schema.name] || undefined;
+      },
+
+      assertConfig: (config) => {
+        if (!config.level_entity) {
+          throw new Error("Water level entity is required.");
+        }
+
+        if (
+          config.capacity_liters !== undefined &&
+          Number(config.capacity_liters) <= 0
+        ) {
+          throw new Error("Tank capacity must be greater than 0.");
+        }
+      },
+    };
+  }
+
+  /* =========================================================
+     DEFAULT CONFIG FOR CARD PICKER
+     ========================================================= */
+
+  static getStubConfig() {
+    return {
+      level_entity: "sensor.esp8266_text_tank_water_level",
+      distance_entity:
+        "sensor.esp8266_text_tank_water_level_distance",
+      pump_entity: "switch.borewell_p110",
+
+      name: "Water Tank",
+
+      capacity_liters: 1000,
+
+      card_height: "500px",
+      tank_height: "360px",
+      tank_width: "210px",
+
+      border_radius: 26,
+
+      background:
+        "linear-gradient(145deg, rgba(20,35,52,0.96), rgba(5,15,27,0.98))",
+    };
+  }
+
+  /* =========================================================
+     SET CONFIG
+     ========================================================= */
+
   setConfig(config) {
-    if (!config.level_entity) {
-      throw new Error("water-tank-card: level_entity is required");
+    if (!config || !config.level_entity) {
+      throw new Error("Water level entity is required.");
     }
 
-    this.config = {
-      name: "Water Tank",
-      capacity_liters: 1000,
+    this._config = {
+      ...DEFAULT_CONFIG,
       ...config,
     };
 
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: "open" });
-    }
+    this._render(true);
   }
 
-  set hass(hass) {
-    this._hass = hass;
-    this.render();
+  /* =========================================================
+     HOME ASSISTANT HASS
+     ========================================================= */
+
+  set hass(value) {
+    this._hass = value;
+
+    this._render();
   }
+
+  get hass() {
+    return this._hass;
+  }
+
+  /* =========================================================
+     CARD SIZE
+     ========================================================= */
 
   getCardSize() {
+    const height = parseInt(
+      this._config?.card_height,
+      10
+    );
+
+    if (Number.isFinite(height)) {
+      return Math.max(
+        4,
+        Math.ceil(height / 50)
+      );
+    }
+
     return 6;
   }
 
-  escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+  /* =========================================================
+     SECTIONS VIEW GRID
+     ========================================================= */
+
+  getGridOptions() {
+    return {
+      rows: 6,
+      columns: 12,
+
+      min_rows: 4,
+      min_columns: 6,
+
+      max_columns: 12,
+    };
   }
 
-  getLevelColor(level) {
-    if (level < 20) return "#ef4444";
-    if (level < 40) return "#f59e0b";
-    if (level < 60) return "#eab308";
-    if (level < 80) return "#22c55e";
-    return "#22a7ff";
-  }
+  /* =========================================================
+     GET ENTITY STATE
+     ========================================================= */
 
-  render() {
-    if (!this.shadowRoot || !this._hass) return;
-
-    const c = this.config;
-    const states = this._hass.states;
-
-    let level = Number(states[c.level_entity]?.state);
-
-    if (!Number.isFinite(level)) {
-      level = 0;
+  _state(entity) {
+    if (
+      !entity ||
+      !this._hass ||
+      !this._hass.states
+    ) {
+      return undefined;
     }
 
-    level = Math.max(0, Math.min(100, level));
+    return this._hass.states[entity];
+  }
 
-    const distance = Number(
-      states[c.distance_entity]?.state
+  /* =========================================================
+     NUMBER
+     ========================================================= */
+
+  _number(entity, fallback = 0) {
+    const state = this._state(entity);
+
+    const number = Number(
+      state?.state
     );
 
-    const pump =
-      c.pump_entity &&
-      states[c.pump_entity]?.state === "on";
+    return Number.isFinite(number)
+      ? number
+      : fallback;
+  }
 
-    const capacity = Number(c.capacity_liters) || 1000;
+  /* =========================================================
+     HTML ESCAPE
+     ========================================================= */
 
-    const liters = Math.round((capacity * level) / 100);
+  _escape(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-    const color = this.getLevelColor(level);
+  /* =========================================================
+     CLAMP
+     ========================================================= */
 
-    const name = this.escapeHtml(
-      c.name || "Water Tank"
+  _clamp(value, min, max) {
+    return Math.min(
+      max,
+      Math.max(min, value)
+    );
+  }
+
+  /* =========================================================
+     NUMBER FORMAT
+     ========================================================= */
+
+  _formatNumber(value, decimals = 1) {
+    return Number(value).toLocaleString(
+      undefined,
+      {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      }
+    );
+  }
+
+  /* =========================================================
+     RELATIVE TIME
+     ========================================================= */
+
+  _relativeTime(timestamp) {
+    if (!timestamp) {
+      return "—";
+    }
+
+    const diff = Math.max(
+      0,
+      Math.floor(
+        (
+          Date.now() -
+          new Date(timestamp).getTime()
+        ) / 1000
+      )
     );
 
-    const distanceText = Number.isFinite(distance)
-      ? `${distance.toFixed(1)} cm`
-      : "--";
+    if (diff < 60) {
+      return "just now";
+    }
 
-    const pumpText = pump
-      ? "PUMP ON"
-      : "PUMP OFF";
+    if (diff < 3600) {
+      return `${Math.floor(diff / 60)} min ago`;
+    }
 
-    const pumpColor = pump
-      ? "#22c55e"
-      : "var(--secondary-text-color)";
+    if (diff < 86400) {
+      return `${Math.floor(diff / 3600)} h ago`;
+    }
 
-    /*
-     * Deterministic bubbles.
-     * These don't use random numbers, so HA re-renders
-     * won't produce strange visual changes.
-     */
-    const bubbles = [
-      [18, 82, 2.2, 5.2],
-      [31, 66, 1.5, 4.2],
-      [44, 78, 2.5, 6.0],
-      [57, 57, 1.7, 4.8],
-      [69, 72, 2.0, 5.5],
-      [79, 48, 1.4, 4.0],
-      [25, 43, 1.3, 5.8],
-      [51, 36, 1.8, 4.5],
-      [64, 28, 1.2, 5.0],
+    return `${Math.floor(diff / 86400)} d ago`;
+  }
+
+  /* =========================================================
+     RENDER
+     ========================================================= */
+
+  _render(force = false) {
+    if (
+      !this._hass ||
+      !this._config?.level_entity
+    ) {
+      return;
+    }
+
+    const c = this._config;
+
+    /* -------------------------------------------------------
+       ENTITIES
+       ------------------------------------------------------- */
+
+    const levelState =
+      this._state(c.level_entity);
+
+    const distanceState =
+      this._state(c.distance_entity);
+
+    const pumpState =
+      this._state(c.pump_entity);
+
+    /* -------------------------------------------------------
+       LEVEL
+       ------------------------------------------------------- */
+
+    const level = this._clamp(
+      this._number(
+        c.level_entity
+      ),
+      0,
+      100
+    );
+
+    /* -------------------------------------------------------
+       CAPACITY
+       ------------------------------------------------------- */
+
+    const capacity =
+      Math.max(
+        1,
+        Number(c.capacity_liters) || 1000
+      );
+
+    /* -------------------------------------------------------
+       LITERS
+       ------------------------------------------------------- */
+
+    const liters =
+      (capacity * level) / 100;
+
+    /* -------------------------------------------------------
+       DISTANCE
+       ------------------------------------------------------- */
+
+    const distance =
+      distanceState
+        ? Number(distanceState.state)
+        : Number.NaN;
+
+    /* -------------------------------------------------------
+       PUMP
+       ------------------------------------------------------- */
+
+    const pumpOn =
+      pumpState &&
+      [
+        "on",
+        "true",
+        "1",
+        "active",
+      ].includes(
+        String(
+          pumpState.state
+        ).toLowerCase()
+      );
+
+    /* -------------------------------------------------------
+       RENDER SIGNATURE
+       ------------------------------------------------------- */
+
+    const signature = [
+      level,
+      distanceState?.state,
+      pumpState?.state,
+
+      c.name,
+      c.card_height,
+      c.tank_height,
+      c.tank_width,
+      c.border_radius,
+      c.background,
+    ].join("|");
+
+    if (
+      !force &&
+      signature === this._lastSignature
+    ) {
+      return;
+    }
+
+    this._lastSignature =
+      signature;
+
+    /* -------------------------------------------------------
+       CONFIG VALUES
+       ------------------------------------------------------- */
+
+    const fillHeight =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          level
+        )
+      );
+
+    const tankHeight =
+      c.tank_height ||
+      "360px";
+
+    const tankWidth =
+      c.tank_width ||
+      "210px";
+
+    const cardHeight =
+      c.card_height ||
+      "500px";
+
+    const radius =
+      Number(
+        c.border_radius ?? 26
+      );
+
+    /* -------------------------------------------------------
+       BUBBLES
+       ------------------------------------------------------- */
+
+    const bubbleData = [
+      [12, 13, 4, 11],
+      [28, 8, 3, 15],
+      [43, 18, 5, 9],
+      [58, 10, 3, 13],
+      [73, 21, 4, 10],
+      [87, 7, 3, 16],
+      [22, 28, 2, 12],
+      [67, 30, 2, 14],
     ];
 
-    const bubbleHtml = bubbles
-      .map(
-        (b, i) => `
-          <span
-            class="bubble bubble-${i}"
-            style="
-              left:${b[0]}%;
-              bottom:${b[1]}%;
-              width:${b[2] * 2}px;
-              height:${b[2] * 2}px;
-              --rise:${b[3]}s;
-            "
-          ></span>
-        `
-      )
-      .join("");
+    const bubbles =
+      bubbleData
+        .map(
+          (
+            [
+              left,
+              bottom,
+              size,
+              delay,
+            ]
+          ) =>
+            `
+            <span
+              class="bubble"
+              style="
+                left:${left}%;
+                bottom:${bottom}%;
+                width:${size}px;
+                height:${size}px;
+                animation-delay:${delay}s
+              "
+            ></span>
+            `
+        )
+        .join("");
 
-    /*
-     * Tank level markings.
-     */
-    const markings = [100, 75, 50, 25, 0]
-      .map(
-        (value) => `
-          <div
-            class="mark mark-${value}"
-            style="bottom:${value}%"
-          >
-            <span class="mark-line"></span>
-            <span class="mark-label">${value}%</span>
-          </div>
-        `
-      )
-      .join("");
+    /* -------------------------------------------------------
+       SCALE MARKINGS
+       ------------------------------------------------------- */
 
-    /*
-     * Water surface waves.
-     */
-    const waves = `
-      <svg
-        class="waves"
-        viewBox="0 0 500 80"
-        preserveAspectRatio="none"
-      >
-        <path
-          class="wave wave-back"
-          d="
-            M0,40
-            C55,15 105,65 165,40
-            C225,15 275,65 335,40
-            C395,15 445,65 500,40
-            L500,80
-            L0,80 Z
-          "
-        ></path>
+    const marks =
+      [
+        100,
+        75,
+        50,
+        25,
+        0,
+      ]
+        .map(
+          (mark) =>
+            `
+            <div
+              class="mark"
+              style="bottom:${mark}%"
+            >
+              <span>${mark}</span>
+            </div>
+            `
+        )
+        .join("");
 
-        <path
-          class="wave wave-front"
-          d="
-            M0,43
-            C55,68 105,18 165,43
-            C225,68 275,18 335,43
-            C395,68 445,18 500,43
-            L500,80
-            L0,80 Z
-          "
-        ></path>
-      </svg>
-    `;
+    /* -------------------------------------------------------
+       DISPLAY VALUES
+       ------------------------------------------------------- */
+
+    const tankLiters =
+      this._formatNumber(
+        liters,
+        0
+      );
+
+    const distanceText =
+      Number.isFinite(distance)
+        ? `${this._formatNumber(
+            distance,
+            1
+          )} cm`
+        : "—";
+
+    const pumpClass =
+      pumpOn
+        ? "on"
+        : "off";
+
+    const pumpText =
+      pumpState
+        ? pumpOn
+          ? "PUMP ON"
+          : "PUMP OFF"
+        : "PUMP —";
+
+    const updated =
+      levelState?.last_changed
+        ? this._relativeTime(
+            levelState.last_changed
+          )
+        : "—";
+
+    const name =
+      this._escape(
+        c.name ||
+        "Water Tank"
+      );
+
+    /* -------------------------------------------------------
+       CIRCULAR GAUGE
+       ------------------------------------------------------- */
+
+    const gaugeRadius = 46;
+
+    const gaugeCircumference =
+      2 *
+      Math.PI *
+      gaugeRadius;
+
+    const gaugeOffset =
+      gaugeCircumference -
+      (
+        level / 100
+      ) *
+        gaugeCircumference;
+
+    /* =======================================================
+       SHADOW DOM
+       ======================================================= */
 
     this.shadowRoot.innerHTML = `
+
       <style>
 
         :host {
           display: block;
           width: 100%;
           box-sizing: border-box;
-        }
 
-        ha-card {
-          overflow: hidden;
-          position: relative;
-          border-radius: 26px;
+          --wt-blue: #2196f3;
+          --wt-blue-light: #64b5f6;
 
-          background:
-            radial-gradient(
-              circle at 15% 10%,
-              rgba(255,255,255,.14),
-              transparent 28%
-            ),
-            radial-gradient(
-              circle at 85% 90%,
-              rgba(0,140,255,.13),
-              transparent 35%
-            ),
-            linear-gradient(
-              145deg,
-              rgba(30,45,65,.92),
-              rgba(8,18,30,.96)
-            );
+          --wt-text:
+            rgba(255,255,255,.96);
 
-          border: 1px solid rgba(255,255,255,.12);
-
-          box-shadow:
-            0 15px 45px rgba(0,0,0,.30),
-            inset 0 1px 0 rgba(255,255,255,.08);
-
-          color: var(--primary-text-color);
+          --wt-muted:
+            rgba(220,235,250,.68);
         }
 
         * {
           box-sizing: border-box;
         }
 
-        .container {
-          padding: 18px;
-          font-family: var(--primary-font-family);
-        }
+        /* =====================================================
+           CARD
+           ===================================================== */
 
-        /* =========================
-           HEADER
-           ========================= */
+        ha-card {
 
-        .header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 12px;
-        }
-
-        .title {
-          display: flex;
-          align-items: center;
-          gap: 9px;
-
-          font-size: 20px;
-          font-weight: 700;
-          letter-spacing: .2px;
-        }
-
-        .title-icon {
-          width: 34px;
-          height: 34px;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          border-radius: 12px;
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(0,190,255,.25),
-              rgba(0,90,255,.10)
-            );
-
-          box-shadow:
-            inset 0 0 15px rgba(0,180,255,.12);
-        }
-
-        .title-icon svg {
-          width: 22px;
-          height: 22px;
-          fill: #20bfff;
-          filter: drop-shadow(0 0 6px rgba(0,180,255,.6));
-        }
-
-        .pump-status {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-
-          padding: 7px 11px;
-          border-radius: 20px;
-
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: .4px;
-
-          color: ${pumpColor};
-
-          background: ${
-            pump
-              ? "rgba(34,197,94,.12)"
-              : "rgba(128,128,128,.10)"
-          };
-
-          border: 1px solid ${
-            pump
-              ? "rgba(34,197,94,.28)"
-              : "rgba(255,255,255,.08)"
-          };
-        }
-
-        .pump-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-
-          background: ${pump ? "#22c55e" : "#888"};
-
-          box-shadow:
-            0 0 ${
-              pump ? "10px rgba(34,197,94,.9)" : "none"
-            };
-
-          ${
-            pump
-              ? "animation:pulse 1.5s infinite;"
-              : ""
-          }
-        }
-
-        /* =========================
-           MAIN LAYOUT
-           ========================= */
-
-        .main {
-          display: grid;
-          grid-template-columns: minmax(190px, 1fr) minmax(140px, .8fr);
-          gap: 18px;
-          align-items: center;
-        }
-
-        /* =========================
-           GLASS TANK
-           ========================= */
-
-        .tank-area {
-          position: relative;
-          height: 330px;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .tank {
           position: relative;
 
-          width: min(190px, 70%);
-          height: 300px;
+          height:
+            ${this._escape(
+              cardHeight
+            )};
 
-          border-radius:
-            30px
-            30px
-            24px
-            24px;
+          min-height: 300px;
 
           overflow: hidden;
 
+          padding: 0;
+
+          border-radius:
+            ${radius}px;
+
           background:
+            ${c.background ||
+            DEFAULT_CONFIG.background};
+
+          color:
+            var(--wt-text);
+
+          border:
+            1px solid
+            rgba(255,255,255,.11);
+
+          box-shadow:
+
+            0 18px 45px
+            rgba(0,0,0,.28),
+
+            inset 0 1px 0
+            rgba(255,255,255,.09);
+        }
+
+        ha-card::before {
+
+          content: "";
+
+          position: absolute;
+
+          inset: 0;
+
+          pointer-events: none;
+
+          background:
+
+            radial-gradient(
+              circle at 15% 5%,
+              rgba(255,255,255,.12),
+              transparent 28%
+            ),
+
+            radial-gradient(
+              circle at 90% 100%,
+              rgba(33,150,243,.11),
+              transparent 32%
+            );
+        }
+
+        /* =====================================================
+           MAIN LAYOUT
+           ===================================================== */
+
+        .wrap {
+
+          position: relative;
+
+          height: 100%;
+
+          width: 100%;
+
+          display: grid;
+
+          grid-template-columns:
+            minmax(190px, 1.1fr)
+            minmax(180px, .9fr);
+
+          gap: 14px;
+
+          padding: 20px;
+        }
+
+        /* =====================================================
+           LEFT SIDE
+           ===================================================== */
+
+        .left {
+
+          min-width: 0;
+
+          display: flex;
+
+          flex-direction: column;
+
+          align-items: center;
+
+          justify-content:
+            space-between;
+        }
+
+        /* =====================================================
+           TITLE
+           ===================================================== */
+
+        .title {
+
+          width: 100%;
+
+          text-align: center;
+
+          font-size:
+            clamp(
+              17px,
+              2.2vw,
+              24px
+            );
+
+          font-weight: 700;
+
+          letter-spacing: .2px;
+
+          text-shadow:
+            0 2px 12px
+            rgba(0,0,0,.35);
+        }
+
+        /* =====================================================
+           TANK AREA
+           ===================================================== */
+
+        .tank-area {
+
+          position: relative;
+
+          display: flex;
+
+          justify-content: center;
+
+          align-items: center;
+
+          flex: 1;
+
+          width: 100%;
+
+          min-height: 0;
+
+          margin: 5px 0;
+        }
+
+        /* =====================================================
+           TANK
+           ===================================================== */
+
+        .tank {
+
+          position: relative;
+
+          height:
+            ${this._escape(
+              tankHeight
+            )};
+
+          width:
+            ${this._escape(
+              tankWidth
+            )};
+
+          max-height:
+            calc(100% - 4px);
+
+          max-width: 70%;
+
+          min-width: 120px;
+
+          border-radius:
+            28px 28px 24px 24px;
+
+          overflow: hidden;
+
+          border:
+            2px solid
+            rgba(255,255,255,.28);
+
+          background:
+
             linear-gradient(
               90deg,
-              rgba(255,255,255,.13),
-              rgba(255,255,255,.035) 22%,
-              rgba(255,255,255,.02) 50%,
-              rgba(255,255,255,.10) 78%,
-              rgba(255,255,255,.035)
+              rgba(255,255,255,.12),
+              rgba(255,255,255,.025) 17%,
+              rgba(255,255,255,.02) 80%,
+              rgba(255,255,255,.13)
             );
 
-          border:
-            2px solid rgba(210,240,255,.38);
-
           box-shadow:
-            inset 10px 0 25px rgba(255,255,255,.07),
-            inset -10px 0 25px rgba(0,0,0,.14),
-            inset 0 0 35px rgba(90,200,255,.07),
-            0 14px 35px rgba(0,0,0,.28);
+
+            inset 10px 0 18px
+            rgba(255,255,255,.045),
+
+            inset -10px 0 18px
+            rgba(0,0,0,.16),
+
+            0 15px 30px
+            rgba(0,0,0,.25);
         }
 
-        /*
-         * Tank top rim
-         */
+        /* =====================================================
+           GLASS REFLECTION
+           ===================================================== */
+
         .tank::before {
-          content: "";
 
-          position: absolute;
-          z-index: 10;
-
-          top: -2px;
-          left: 50%;
-
-          width: 106%;
-          height: 25px;
-
-          transform: translateX(-50%);
-
-          border-radius: 50%;
-
-          border:
-            2px solid rgba(220,245,255,.42);
-
-          background:
-            linear-gradient(
-              180deg,
-              rgba(255,255,255,.16),
-              rgba(255,255,255,.03)
-            );
-
-          box-shadow:
-            0 2px 8px rgba(0,0,0,.25),
-            inset 0 2px 5px rgba(255,255,255,.13);
-        }
-
-        /*
-         * Tank bottom rim
-         */
-        .tank::after {
-          content: "";
-
-          position: absolute;
-          z-index: 10;
-
-          bottom: -3px;
-          left: 50%;
-
-          width: 108%;
-          height: 25px;
-
-          transform: translateX(-50%);
-
-          border-radius: 50%;
-
-          border:
-            2px solid rgba(180,230,255,.25);
-
-          background:
-            linear-gradient(
-              180deg,
-              rgba(255,255,255,.06),
-              rgba(0,0,0,.12)
-            );
-        }
-
-        /* =========================
-           WATER
-           ========================= */
-
-        .water {
-          position: absolute;
-
-          left: 0;
-          right: 0;
-          bottom: 0;
-
-          height: ${level}%;
-
-          min-height: ${
-            level > 0 ? "4px" : "0"
-          };
-
-          overflow: visible;
-
-          transition:
-            height 1.2s cubic-bezier(.22,.61,.36,1);
-
-          background:
-            linear-gradient(
-              180deg,
-              rgba(45,205,255,.82) 0%,
-              rgba(0,160,255,.78) 32%,
-              rgba(0,105,225,.88) 70%,
-              rgba(20,70,190,.94) 100%
-            );
-
-          box-shadow:
-            inset 12px 0 20px rgba(255,255,255,.06),
-            inset -15px 0 25px rgba(0,40,150,.12),
-            0 -4px 20px rgba(0,170,255,.22);
-        }
-
-        /*
-         * Water shine
-         */
-        .water::after {
           content: "";
 
           position: absolute;
 
           left: 8%;
-          right: 8%;
-          top: 10%;
-          bottom: 0;
 
-          border-radius: 50%;
+          top: 2%;
 
-          background:
-            linear-gradient(
-              90deg,
-              transparent,
-              rgba(255,255,255,.10),
-              transparent
-            );
-
-          animation:
-            water-shine 4s ease-in-out infinite;
-        }
-
-        .waves {
-          position: absolute;
-
-          left: -20%;
-          top: -17px;
-
-          width: 140%;
-          height: 45px;
-
-          overflow: visible;
-
-          filter:
-            drop-shadow(
-              0 0 5px rgba(70,220,255,.45)
-            );
-        }
-
-        .wave {
-          fill: rgba(170,240,255,.45);
-        }
-
-        .wave-back {
-          opacity: .45;
-          animation:
-            wave-back 4s ease-in-out infinite;
-        }
-
-        .wave-front {
-          fill: rgba(80,215,255,.68);
-          opacity: .78;
-
-          animation:
-            wave-front 3.2s ease-in-out infinite;
-        }
-
-        /* =========================
-           BUBBLES
-           ========================= */
-
-        .bubble {
-          position: absolute;
-
-          display: block;
-
-          border-radius: 50%;
-
-          border:
-            1px solid rgba(255,255,255,.70);
-
-          background:
-            radial-gradient(
-              circle at 30% 25%,
-              rgba(255,255,255,.95),
-              rgba(150,230,255,.22) 35%,
-              transparent 70%
-            );
-
-          box-shadow:
-            0 0 5px rgba(180,240,255,.35);
-
-          animation:
-            bubble-rise var(--rise) linear infinite;
-
-          opacity: .7;
-        }
-
-        /* =========================
-           GLASS REFLECTION
-           ========================= */
-
-        .reflection {
-          position: absolute;
-
-          z-index: 8;
-
-          top: 8%;
-          left: 10%;
-
-          width: 22%;
-          height: 80%;
-
-          border-radius: 50%;
-
-          background:
-            linear-gradient(
-              180deg,
-              rgba(255,255,255,.32),
-              rgba(255,255,255,.04),
-              transparent
-            );
-
-          filter: blur(1px);
-
-          transform: rotate(5deg);
-
-          pointer-events: none;
-        }
-
-        .reflection-small {
-          position: absolute;
-
-          z-index: 8;
-
-          top: 12%;
-          right: 13%;
+          bottom: 3%;
 
           width: 9%;
-          height: 50%;
 
-          border-radius: 50%;
-
-          background:
-            rgba(255,255,255,.14);
-
-          filter: blur(2px);
-
-          pointer-events: none;
-        }
-
-        /* =========================
-           LEVEL MARKINGS
-           ========================= */
-
-        .marks {
-          position: absolute;
-
-          z-index: 12;
-
-          top: 15px;
-          bottom: 15px;
-
-          left: calc(50% - 122px);
-
-          width: 60px;
-
-          pointer-events: none;
-        }
-
-        .mark {
-          position: absolute;
-
-          right: 0;
-
-          display: flex;
-          align-items: center;
-          gap: 5px;
-
-          transform: translateY(50%);
-        }
-
-        .mark-line {
-          width: 17px;
-          height: 1px;
+          border-radius:
+            999px;
 
           background:
-            rgba(220,245,255,.65);
-        }
 
-        .mark-label {
-          min-width: 35px;
-
-          font-size: 9px;
-          font-weight: 600;
-
-          color:
-            rgba(230,248,255,.72);
-
-          text-shadow:
-            0 1px 3px rgba(0,0,0,.7);
-        }
-
-        /* =========================
-           CENTER VALUE
-           ========================= */
-
-        .tank-value {
-          position: absolute;
-
-          z-index: 20;
-
-          inset: 0;
-
-          display: flex;
-          flex-direction: column;
-
-          align-items: center;
-          justify-content: center;
-
-          pointer-events: none;
-
-          color: white;
-
-          text-align: center;
-
-          text-shadow:
-            0 2px 10px rgba(0,0,0,.65);
-        }
-
-        .percent {
-          font-size: 37px;
-          line-height: 1;
-
-          font-weight: 800;
-
-          letter-spacing: -1.5px;
-        }
-
-        .liters {
-          margin-top: 8px;
-
-          font-size: 14px;
-          font-weight: 600;
-
-          opacity: .92;
-        }
-
-        /* =========================
-           RIGHT INFO
-           ========================= */
-
-        .info {
-          display: flex;
-          flex-direction: column;
-          gap: 13px;
-        }
-
-        .gauge {
-          position: relative;
-
-          width: 150px;
-          height: 150px;
-
-          margin: 0 auto;
-
-          border-radius: 50%;
-
-          background:
-            conic-gradient(
-              ${color} ${level}%,
-              rgba(255,255,255,.08) ${level}%
+            linear-gradient(
+              180deg,
+              rgba(255,255,255,.50),
+              rgba(255,255,255,.06)
             );
 
-          box-shadow:
-            0 0 25px rgba(0,150,255,.08),
-            inset 0 0 20px rgba(0,0,0,.16);
+          filter:
+            blur(.4px);
+
+          opacity: .55;
+
+          z-index: 8;
+
+          pointer-events: none;
         }
 
-        .gauge::before {
+        .tank::after {
+
           content: "";
 
           position: absolute;
 
-          inset: 8px;
+          inset: 0;
+
+          border-radius:
+            inherit;
+
+          box-shadow:
+
+            inset 0 0 0 1px
+            rgba(255,255,255,.10),
+
+            inset 0 -18px 30px
+            rgba(0,0,0,.14);
+
+          pointer-events: none;
+
+          z-index: 9;
+        }
+
+        /* =====================================================
+           WATER
+           ===================================================== */
+
+        .water {
+
+          position: absolute;
+
+          left: -4%;
+
+          width: 108%;
+
+          bottom: 0;
+
+          height:
+            ${fillHeight}%;
+
+          min-height:
+            ${
+              fillHeight > 0
+                ? "2px"
+                : "0"
+            };
+
+          background:
+
+            linear-gradient(
+              180deg,
+              rgba(100,181,246,.90) 0%,
+              rgba(33,150,243,.88) 45%,
+              rgba(3,93,174,.95) 100%
+            );
+
+          box-shadow:
+
+            0 -5px 18px
+            rgba(33,150,243,.34),
+
+            inset 0 8px 15px
+            rgba(255,255,255,.13);
+
+          transition:
+            height 1s ease;
+
+          overflow: hidden;
+
+          z-index: 3;
+        }
+
+        /* =====================================================
+           WATER WAVES
+           ===================================================== */
+
+        .water::before,
+        .water::after {
+
+          content: "";
+
+          position: absolute;
+
+          top: -6px;
+
+          left: -10%;
+
+          width: 120%;
+
+          height: 18px;
 
           border-radius: 50%;
 
           background:
-            linear-gradient(
-              145deg,
-              rgba(12,30,48,.98),
-              rgba(8,17,29,.98)
-            );
+            rgba(255,255,255,.18);
 
-          box-shadow:
-            inset 0 0 18px rgba(255,255,255,.04);
+          filter:
+            blur(.3px);
         }
 
-        .gauge-content {
+        .water::before {
+
+          animation:
+            wave1 3.5s
+            ease-in-out
+            infinite;
+        }
+
+        .water::after {
+
+          top: -2px;
+
+          opacity: .35;
+
+          animation:
+            wave2 5s
+            ease-in-out
+            infinite reverse;
+        }
+
+        @keyframes wave1 {
+
+          0%,
+          100% {
+            transform:
+              translateX(-4%)
+              scaleY(1);
+          }
+
+          50% {
+            transform:
+              translateX(4%)
+              scaleY(.65);
+          }
+        }
+
+        @keyframes wave2 {
+
+          0%,
+          100% {
+            transform:
+              translateX(4%)
+              scaleY(.75);
+          }
+
+          50% {
+            transform:
+              translateX(-4%)
+              scaleY(1.1);
+          }
+        }
+
+        /* =====================================================
+           BUBBLES
+           ===================================================== */
+
+        .bubble {
+
+          position: absolute;
+
+          border-radius: 50%;
+
+          border:
+            1px solid
+            rgba(255,255,255,.45);
+
+          background:
+            rgba(255,255,255,.13);
+
+          animation:
+            bubble 7s
+            linear
+            infinite;
+
+          opacity: .75;
+        }
+
+        @keyframes bubble {
+
+          0% {
+
+            transform:
+              translateY(20px)
+              scale(.7);
+
+            opacity: 0;
+          }
+
+          12% {
+            opacity: .7;
+          }
+
+          80% {
+            opacity: .35;
+          }
+
+          100% {
+
+            transform:
+              translateY(-150px)
+              scale(1.05);
+
+            opacity: 0;
+          }
+        }
+
+        /* =====================================================
+           WATER TEXT
+           ===================================================== */
+
+        .water-label {
+
           position: absolute;
 
           inset: 0;
 
-          z-index: 2;
+          z-index: 10;
 
           display: flex;
-          flex-direction: column;
 
           align-items: center;
+
           justify-content: center;
 
-          text-align: center;
+          flex-direction: column;
+
+          pointer-events: none;
+
+          text-shadow:
+            0 2px 8px
+            rgba(0,0,0,.45);
         }
 
-        .gauge-drop {
-          font-size: 25px;
+        .percent {
 
-          margin-bottom: 3px;
-
-          filter:
-            drop-shadow(
-              0 0 6px rgba(0,190,255,.55)
+          font-size:
+            clamp(
+              27px,
+              4vw,
+              44px
             );
-        }
 
-        .gauge-percent {
-          font-size: 27px;
           font-weight: 800;
 
           line-height: 1;
         }
 
-        .gauge-liters {
+        .liters {
+
           margin-top: 7px;
 
-          font-size: 12px;
+          font-size: 14px;
 
           color:
-            var(--secondary-text-color);
+            rgba(255,255,255,.86);
         }
 
-        /* =========================
-           DISTANCE
-           ========================= */
+        /* =====================================================
+           TANK MARKINGS
+           ===================================================== */
 
-        .distance-box {
-          padding: 13px;
+        .marks {
 
-          border-radius: 17px;
+          position: absolute;
 
-          border:
-            1px solid rgba(50,180,255,.28);
+          right: -48px;
+
+          top: 0;
+
+          bottom: 0;
+
+          width: 42px;
+
+          z-index: 12;
+        }
+
+        .mark {
+
+          position: absolute;
+
+          left: 0;
+
+          width: 100%;
+
+          height: 1px;
+
+          display: flex;
+
+          align-items: center;
+
+          color:
+            rgba(255,255,255,.55);
+
+          font-size: 10px;
+        }
+
+        .mark::before {
+
+          content: "";
+
+          width: 18px;
+
+          height: 1px;
+
+          margin-right: 5px;
 
           background:
-            linear-gradient(
-              145deg,
-              rgba(0,160,255,.11),
-              rgba(0,90,180,.04)
+            rgba(255,255,255,.34);
+        }
+
+        .mark span {
+
+          white-space:
+            nowrap;
+        }
+
+        /* =====================================================
+           BOTTOM META
+           ===================================================== */
+
+        .bottom-meta {
+
+          display: flex;
+
+          gap: 9px;
+
+          flex-wrap: wrap;
+
+          justify-content: center;
+
+          color:
+            var(--wt-muted);
+
+          font-size: 11px;
+        }
+
+        .meta-pill {
+
+          padding:
+            6px 9px;
+
+          border-radius:
+            999px;
+
+          background:
+            rgba(255,255,255,.055);
+
+          border:
+            1px solid
+            rgba(255,255,255,.08);
+
+          backdrop-filter:
+            blur(8px);
+        }
+
+        /* =====================================================
+           RIGHT SIDE
+           ===================================================== */
+
+        .right {
+
+          min-width: 0;
+
+          display: flex;
+
+          flex-direction: column;
+
+          justify-content: center;
+
+          align-items: center;
+
+          gap: 15px;
+        }
+
+        /* =====================================================
+           CIRCULAR GAUGE
+           ===================================================== */
+
+        .gauge {
+
+          position: relative;
+
+          width:
+            min(190px, 70%);
+
+          aspect-ratio: 1;
+
+          display: grid;
+
+          place-items: center;
+        }
+
+        .gauge svg {
+
+          width: 100%;
+
+          height: 100%;
+
+          transform:
+            rotate(-90deg);
+        }
+
+        .track {
+
+          fill: none;
+
+          stroke:
+            rgba(255,255,255,.09);
+
+          stroke-width: 10;
+        }
+
+        .progress {
+
+          fill: none;
+
+          stroke:
+            url(#wtGradient);
+
+          stroke-width: 10;
+
+          stroke-linecap:
+            round;
+
+          stroke-dasharray:
+            ${gaugeCircumference};
+
+          stroke-dashoffset:
+            ${gaugeOffset};
+
+          transition:
+            stroke-dashoffset 1s ease;
+
+          filter:
+            drop-shadow(
+              0 0 7px
+              rgba(33,150,243,.35)
             );
-
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.04);
         }
 
-        .distance-title {
-          font-size: 10px;
+        .gauge-center {
+
+          position: absolute;
+
+          inset: 0;
+
+          display: flex;
+
+          flex-direction: column;
+
+          align-items: center;
+
+          justify-content: center;
+        }
+
+        .gauge-percent {
+
+          font-size: 34px;
+
+          font-weight: 800;
+        }
+
+        .gauge-small {
+
+          margin-top: 4px;
 
           color:
-            var(--secondary-text-color);
+            var(--wt-muted);
 
-          margin-bottom: 4px;
+          font-size: 12px;
         }
 
-        .distance-value {
-          font-size: 22px;
+        /* =====================================================
+           INFORMATION BOXES
+           ===================================================== */
 
-          font-weight: 750;
+        .info {
 
-          color: #65d5ff;
-        }
+          width:
+            min(260px, 100%);
 
-        /* =========================
-           PUMP BOX
-           ========================= */
-
-        .pump-box {
-          padding: 12px 13px;
-
-          border-radius: 17px;
-
-          border:
-            1px solid ${
-              pump
-                ? "rgba(34,197,94,.30)"
-                : "rgba(255,255,255,.08)"
-            };
-
-          background:
-            ${
-              pump
-                ? "rgba(34,197,94,.08)"
-                : "rgba(255,255,255,.035)"
-            };
-        }
-
-        .pump-box-title {
-          font-size: 10px;
-
-          color:
-            var(--secondary-text-color);
-
-          margin-bottom: 4px;
-        }
-
-        .pump-box-value {
-          font-size: 17px;
-
-          font-weight: 750;
-
-          color: ${pumpColor};
-        }
-
-        /* =========================
-           FOOTER
-           ========================= */
-
-        .footer {
           display: grid;
 
           grid-template-columns:
-            repeat(3, 1fr);
+            1fr 1fr;
 
-          gap: 8px;
-
-          margin-top: 14px;
-
-          padding-top: 13px;
-
-          border-top:
-            1px solid rgba(255,255,255,.08);
+          gap: 9px;
         }
 
-        .footer-item {
-          text-align: center;
+        .info-box {
+
+          min-width: 0;
+
+          padding: 11px;
+
+          border-radius: 16px;
+
+          background:
+            rgba(255,255,255,.055);
+
+          border:
+            1px solid
+            rgba(255,255,255,.08);
+
+          backdrop-filter:
+            blur(10px);
         }
 
-        .footer-label {
-          font-size: 9px;
+        .info-label {
 
           color:
-            var(--secondary-text-color);
+            var(--wt-muted);
 
-          margin-bottom: 3px;
+          font-size: 10px;
+
+          text-transform:
+            uppercase;
+
+          letter-spacing: .7px;
         }
 
-        .footer-value {
-          font-size: 12px;
+        .info-value {
+
+          margin-top: 4px;
+
+          font-size: 15px;
 
           font-weight: 700;
+
+          overflow: hidden;
+
+          text-overflow: ellipsis;
+
+          white-space: nowrap;
         }
 
-        /* =========================
-           ANIMATIONS
-           ========================= */
+        /* =====================================================
+           PUMP
+           ===================================================== */
 
-        @keyframes wave-front {
-          0%,100% {
-            transform: translateX(-18px);
-          }
+        .pump {
 
-          50% {
-            transform: translateX(18px);
-          }
+          width:
+            min(260px, 100%);
+
+          text-align: center;
+
+          padding:
+            10px 14px;
+
+          border-radius:
+            999px;
+
+          font-size: 12px;
+
+          font-weight: 800;
+
+          letter-spacing: .5px;
+
+          border:
+            1px solid
+            rgba(255,255,255,.09);
+
+          background:
+            rgba(255,255,255,.055);
         }
 
-        @keyframes wave-back {
-          0%,100% {
-            transform: translateX(15px);
-          }
+        .pump.on {
 
-          50% {
-            transform: translateX(-15px);
-          }
+          color:
+            #b9f6c5;
+
+          background:
+            rgba(76,175,80,.20);
+
+          border-color:
+            rgba(76,175,80,.35);
+
+          box-shadow:
+            0 0 18px
+            rgba(76,175,80,.10);
         }
 
-        @keyframes bubble-rise {
-          0% {
-            transform:
-              translateY(15px)
-              scale(.65);
+        .pump.off {
 
-            opacity: 0;
-          }
-
-          15% {
-            opacity: .75;
-          }
-
-          70% {
-            opacity: .55;
-          }
-
-          100% {
-            transform:
-              translateY(-230px)
-              scale(1.1);
-
-            opacity: 0;
-          }
+          color:
+            rgba(255,255,255,.62);
         }
 
-        @keyframes water-shine {
-          0%,100% {
-            transform: translateX(-20%);
-            opacity: .25;
-          }
+        /* =====================================================
+           FOOTER
+           ===================================================== */
 
-          50% {
-            transform: translateX(20%);
-            opacity: .55;
-          }
+        .footer {
+
+          width:
+            min(260px, 100%);
+
+          color:
+            rgba(220,235,250,.48);
+
+          text-align: center;
+
+          font-size: 10px;
         }
 
-        @keyframes pulse {
-          0%,100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-
-          50% {
-            opacity: .45;
-            transform: scale(.72);
-          }
-        }
-
-        /* =========================
+        /* =====================================================
            MOBILE
-           ========================= */
+           ===================================================== */
 
-        @media (max-width: 520px) {
+        @media (max-width: 560px) {
 
-          .container {
-            padding: 14px;
+          ha-card {
+            min-height: 460px;
           }
 
-          .main {
+          .wrap {
+
             grid-template-columns:
               1fr;
+
+            grid-template-rows:
+              1fr auto;
+
+            padding: 14px;
+
+            gap: 4px;
           }
 
-          .tank-area {
-            height: 310px;
-          }
+          .right {
 
-          .info {
             display: grid;
 
             grid-template-columns:
-              1fr 1fr;
+              100px 1fr;
+
+            gap: 10px;
+
+            align-items: center;
           }
 
           .gauge {
+
+            width: 100px;
+          }
+
+          .gauge-percent {
+
+            font-size: 23px;
+          }
+
+          .gauge-small {
+
+            font-size: 9px;
+          }
+
+          .info {
+
+            width: 100%;
+          }
+
+          .pump,
+          .footer {
+
             grid-column:
               1 / -1;
           }
 
-          .distance-box,
-          .pump-box {
-            min-width: 0;
+          .tank {
+
+            max-width: 55%;
           }
         }
 
       </style>
 
-      <div class="container">
+      <ha-card>
 
-        <!-- HEADER -->
+        <div class="wrap">
 
-        <div class="header">
+          <!-- =================================================
+               LEFT
+               ================================================= -->
 
-          <div class="title">
+          <section class="left">
 
-            <div class="title-icon">
-              <svg viewBox="0 0 24 24">
-                <path d="
-                  M12 2
-                  C12 2 5 9.2 5 14.2
-                  C5 18.6 8.1 22 12 22
-                  C15.9 22 19 18.6 19 14.2
-                  C19 9.2 12 2 12 2Z
-                "/>
-              </svg>
+            <div class="title">
+              ${name}
             </div>
 
-            <span>${name}</span>
+            <div class="tank-area">
 
-          </div>
+              <div class="tank">
 
-          <div class="pump-status">
+                <div class="water">
 
-            <span class="pump-dot"></span>
+                  ${bubbles}
 
-            ${pumpText}
-
-          </div>
-
-        </div>
-
-
-        <!-- MAIN -->
-
-        <div class="main">
-
-          <!-- GLASS TANK -->
-
-          <div class="tank-area">
-
-            <div class="marks">
-              ${markings}
-            </div>
-
-            <div class="tank">
-
-              <div class="water">
-
-                ${waves}
-
-                ${bubbleHtml}
-
-              </div>
-
-              <div class="reflection"></div>
-
-              <div class="reflection-small"></div>
-
-              <div class="tank-value">
-
-                <div class="percent">
-                  ${level.toFixed(1)}%
                 </div>
 
-                <div class="liters">
-                  ${liters.toLocaleString()} L
+                <div class="water-label">
+
+                  <div class="percent">
+                    ${this._formatNumber(
+                      level,
+                      1
+                    )}%
+                  </div>
+
+                  <div class="liters">
+                    ${tankLiters} L
+                  </div>
+
                 </div>
 
               </div>
 
+              <div class="marks">
+                ${marks}
+              </div>
+
             </div>
 
-          </div>
+            <div class="bottom-meta">
 
+              <div class="meta-pill">
+                Capacity
+                ${this._formatNumber(
+                  capacity,
+                  0
+                )} L
+              </div>
 
-          <!-- INFORMATION -->
+              <div class="meta-pill">
+                Updated
+                ${updated}
+              </div>
 
-          <div class="info">
+            </div>
+
+          </section>
+
+          <!-- =================================================
+               RIGHT
+               ================================================= -->
+
+          <section class="right">
 
             <!-- GAUGE -->
 
             <div class="gauge">
 
-              <div class="gauge-content">
+              <svg
+                viewBox="0 0 120 120"
+                aria-hidden="true"
+              >
 
-                <div class="gauge-drop">💧</div>
+                <defs>
+
+                  <linearGradient
+                    id="wtGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+
+                    <stop
+                      offset="0%"
+                      stop-color="#90caf9"
+                    />
+
+                    <stop
+                      offset="45%"
+                      stop-color="#2196f3"
+                    />
+
+                    <stop
+                      offset="100%"
+                      stop-color="#0d47a1"
+                    />
+
+                  </linearGradient>
+
+                </defs>
+
+                <circle
+                  class="track"
+                  cx="60"
+                  cy="60"
+                  r="${gaugeRadius}"
+                />
+
+                <circle
+                  class="progress"
+                  cx="60"
+                  cy="60"
+                  r="${gaugeRadius}"
+                />
+
+              </svg>
+
+              <div class="gauge-center">
 
                 <div class="gauge-percent">
-                  ${level.toFixed(1)}%
+                  ${this._formatNumber(
+                    level,
+                    1
+                  )}%
                 </div>
 
-                <div class="gauge-liters">
-                  ${liters.toLocaleString()} /
-                  ${capacity.toLocaleString()} L
+                <div class="gauge-small">
+                  ${tankLiters}
+                  /
+                  ${this._formatNumber(
+                    capacity,
+                    0
+                  )} L
                 </div>
 
               </div>
 
             </div>
 
+            <!-- INFO -->
 
-            <!-- DISTANCE -->
+            <div class="info">
 
-            <div class="distance-box">
+              <div class="info-box">
 
-              <div class="distance-title">
-                WATER LEVEL DISTANCE
+                <div class="info-label">
+                  Distance
+                </div>
+
+                <div class="info-value">
+                  ${distanceText}
+                </div>
+
               </div>
 
-              <div class="distance-value">
-                ↕ ${distanceText}
+              <div class="info-box">
+
+                <div class="info-label">
+                  Level
+                </div>
+
+                <div class="info-value">
+                  ${this._formatNumber(
+                    level,
+                    1
+                  )}%
+                </div>
+
               </div>
 
             </div>
-
 
             <!-- PUMP -->
 
-            <div class="pump-box">
-
-              <div class="pump-box-title">
-                BOREWELL PUMP
-              </div>
-
-              <div class="pump-box-value">
-                ${pump ? "● ON" : "● OFF"}
-              </div>
-
+            <div
+              class="pump ${pumpClass}"
+            >
+              ${pumpText}
             </div>
 
-          </div>
+            <!-- FOOTER -->
+
+            <div class="footer">
+              Animated glass tank • live Home Assistant data
+            </div>
+
+          </section>
 
         </div>
 
-
-        <!-- FOOTER -->
-
-        <div class="footer">
-
-          <div class="footer-item">
-
-            <div class="footer-label">
-              TANK CAPACITY
-            </div>
-
-            <div class="footer-value">
-              ${capacity.toLocaleString()} L
-            </div>
-
-          </div>
-
-
-          <div class="footer-item">
-
-            <div class="footer-label">
-              CURRENT LEVEL
-            </div>
-
-            <div class="footer-value">
-              ${liters.toLocaleString()} L
-            </div>
-
-          </div>
-
-
-          <div class="footer-item">
-
-            <div class="footer-label">
-              LEVEL
-            </div>
-
-            <div class="footer-value">
-              ${level.toFixed(1)}%
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
+      </ha-card>
     `;
   }
 }
 
-customElements.define(
-  "water-tank-card",
-  WaterTankCard
-);
+/* ===========================================================
+   REGISTER CUSTOM ELEMENT
+   =========================================================== */
+
+if (
+  !customElements.get(CARD_TYPE)
+) {
+  customElements.define(
+    CARD_TYPE,
+    WaterTankCard
+  );
+}
+
+/* ===========================================================
+   HOME ASSISTANT CARD PICKER
+   =========================================================== */
 
 window.customCards =
   window.customCards || [];
 
 window.customCards.push({
-  type: "water-tank-card",
-  name: "Water Tank Card",
+
+  type: CARD_TYPE,
+
+  name:
+    "Water Tank Card",
+
   description:
-    "Glassy animated water tank card for Home Assistant",
+    "Animated glass water tank with built-in visual editor.",
+
   preview: true,
+
+  documentationURL:
+    "https://github.com/DVishnuManiKanTh/Water-Tank-Level-Card",
+
+  /* =========================================================
+     ENTITY SUGGESTION
+     ========================================================= */
+
+  getEntitySuggestion:
+    (hass, entityId) => {
+
+      const state =
+        hass?.states?.[entityId];
+
+      if (
+        !state ||
+        entityId.split(".")[0] !==
+          "sensor"
+      ) {
+        return null;
+      }
+
+      const unit =
+        state.attributes
+          ?.unit_of_measurement;
+
+      if (
+        unit !== "%" &&
+        state.attributes
+          ?.device_class !==
+          "water"
+      ) {
+        return null;
+      }
+
+      return {
+
+        config: {
+
+          ...WaterTankCard.getStubConfig(),
+
+          level_entity:
+            entityId,
+        },
+      };
+    },
 });
+
+/* ===========================================================
+   CONSOLE MESSAGE
+   =========================================================== */
+
+console.info(
+
+  `%c ${CARD_TYPE} %c visual editor enabled `,
+
+  "background:#2196f3;color:white;padding:3px 7px;border-radius:4px 0 0 4px",
+
+  "background:#263238;color:#fff;padding:3px 7px;border-radius:0 4px 4px 0"
+
+);
