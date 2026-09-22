@@ -185,16 +185,16 @@ class WaterTankCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 4;
+    return 3;
   }
 
   getGridOptions() {
     return {
-      rows: 4,
-      columns: 3,
-      min_rows: 4,
-      min_columns: 3,
-      max_columns: 6,
+      rows: 3,
+      columns: 12,
+      min_rows: 3,
+      min_columns: 6,
+      max_columns: 12,
     };
   }
 
@@ -316,109 +316,56 @@ class WaterTankCard extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
-        :host {
-          display:block;
-          --wt-accent:${accent};
-          --wt-bg:rgba(7,16,29,.96);
-          --wt-panel:rgba(255,255,255,.055);
-          --wt-line:rgba(255,255,255,.10);
-          --wt-text:rgba(255,255,255,.96);
-          --wt-muted:rgba(220,235,250,.62);
-        }
+        :host { display:block; --wt-accent:${accent}; --wt-bg:rgba(7,16,29,.96); --wt-panel:rgba(255,255,255,.055); --wt-line:rgba(255,255,255,.10); --wt-text:rgba(255,255,255,.96); --wt-muted:rgba(220,235,250,.62); }
         * { box-sizing:border-box; }
-        ha-card {
-          position:relative;
-          overflow:hidden;
-          height:${this._esc(c.card_height || "auto")};
-          min-height:0;
-          border-radius:${radius}px;
-          padding:0;
-          color:var(--wt-text);
-          background:
-            radial-gradient(circle at 12% 0%, rgba(255,255,255,.10), transparent 28%),
-            radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--wt-accent) 18%, transparent), transparent 35%),
-            var(--wt-bg);
-          border:1px solid var(--wt-line);
-          box-shadow:0 18px 45px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.08);
-        }
-        .shell { position:relative; z-index:1; padding:12px; }
-        .header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:9px; }
-        .title { font-size:16px; font-weight:800; letter-spacing:.1px; }
-        .subtitle { color:var(--wt-muted); font-size:11px; margin-top:3px; }
-        .status {
-          display:flex; align-items:center; gap:7px; padding:5px 8px; border-radius:999px;
-          border:1px solid var(--wt-line); background:var(--wt-panel); font-size:11px; font-weight:800;
-          white-space:nowrap;
-        }
-        .dot { width:7px; height:7px; border-radius:50%; background:#8793a1; box-shadow:0 0 8px rgba(255,255,255,.15); }
-        .pump-on .dot { background:#55d66f; box-shadow:0 0 12px rgba(85,214,111,.75); animation:pulse 1.6s infinite; }
-        .pump-on { color:#bff7c8; border-color:rgba(85,214,111,.30); background:rgba(85,214,111,.10); }
-        .main { display:grid; grid-template-columns:minmax(105px,.85fr) minmax(120px,1.15fr); gap:8px; }
-        .hero, .metrics { border:1px solid var(--wt-line); background:rgba(255,255,255,.035); border-radius:14px; }
-        .hero { min-height:220px; display:flex; align-items:center; justify-content:center; padding:10px; position:relative; overflow:hidden; }
-        .hero-glow { position:absolute; width:240px; height:240px; border-radius:50%; background:var(--wt-accent); opacity:.08; filter:blur(45px); }
-        .tank-wrap { position:relative; width:110px; height:180px; }
-        .tank {
-          position:absolute; inset:0; overflow:hidden; border-radius:34px 34px 28px 28px;
-          border:2px solid rgba(255,255,255,.32);
-          background:linear-gradient(90deg,rgba(255,255,255,.11),rgba(255,255,255,.025) 38%,rgba(255,255,255,.09));
-          box-shadow:inset 12px 0 24px rgba(255,255,255,.055), inset -12px 0 24px rgba(0,0,0,.18), 0 16px 35px rgba(0,0,0,.25);
-        }
-        .tank::before {
-          content:""; position:absolute; left:8%; right:8%; top:7px; height:9px; border-radius:50%;
-          border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.06); z-index:5;
-        }
-        .water {
-          position:absolute; left:0; right:0; bottom:0; height:${fill}%;
-          background:linear-gradient(180deg,rgba(100,181,246,.92),rgba(33,150,243,.78) 45%,rgba(13,71,161,.88));
-          transition:height 1.2s cubic-bezier(.2,.7,.2,1);
-          box-shadow:0 -8px 30px rgba(33,150,243,.24);
-        }
-        .water::before {
-          content:""; position:absolute; left:-12%; top:-8px; width:124%; height:18px;
-          border-radius:50%; background:rgba(170,225,255,.65);
-          box-shadow:0 0 14px rgba(120,205,255,.55);
-          animation:wave 3s ease-in-out infinite;
-        }
-        .water::after {
-          content:""; position:absolute; inset:0;
-          background:repeating-linear-gradient(100deg,transparent 0 32px,rgba(255,255,255,.035) 33px 36px);
-          animation:flow 7s linear infinite;
-        }
-        .bubble { position:absolute; bottom:4%; border-radius:50%; background:rgba(255,255,255,.5); opacity:.0; animation:rise 5s linear infinite; z-index:2; }
-        .tank-value { position:absolute; inset:0; z-index:8; display:flex; flex-direction:column; align-items:center; justify-content:center; text-shadow:0 2px 12px rgba(0,0,0,.45); }
-        .percent { font-size:27px; font-weight:900; line-height:1; }
-        .liters { margin-top:8px; font-size:10px; font-weight:700; opacity:.92; }
-        .marks { position:absolute; right:-38px; top:0; bottom:0; width:34px; }
-        .marks span { position:absolute; right:0; display:flex; align-items:center; gap:5px; transform:translateY(50%); color:var(--wt-muted); font-size:9px; }
-        .marks b { display:block; width:18px; height:1px; background:rgba(255,255,255,.30); }
-        .side { display:flex; flex-direction:column; gap:12px; min-width:0; }
-        .big-number { padding:10px 12px; border-radius:18px; background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025)); border:1px solid var(--wt-line); }
-        .big-label { color:var(--wt-muted); font-size:11px; text-transform:uppercase; letter-spacing:.8px; }
-        .big-value { margin-top:5px; font-size:22px; font-weight:900; line-height:1.1; }
-        .big-value small { font-size:14px; color:var(--wt-muted); font-weight:700; }
-        .metrics { padding:7px; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-        .metric { padding:8px; border-radius:10px; background:var(--wt-panel); border:1px solid rgba(255,255,255,.07); min-width:0; }
-        .metric-label { color:var(--wt-muted); font-size:10px; text-transform:uppercase; letter-spacing:.55px; }
-        .metric-value { margin-top:4px; font-size:13px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .footer { display:flex; justify-content:space-between; gap:10px; color:var(--wt-muted); font-size:10px; padding:0 2px; }
-        @keyframes wave { 0%,100% { transform:translateX(-4%) rotate(-1deg); } 50% { transform:translateX(4%) rotate(1deg); } }
+        ha-card { overflow:hidden; height:${this._esc(c.card_height || "auto")};
+          min-height:0; border-radius:${radius}px; padding:0; color:var(--wt-text);
+          background:radial-gradient(circle at 8% 0%,rgba(255,255,255,.07),transparent 30%),radial-gradient(circle at 100% 100%,color-mix(in srgb,var(--wt-accent) 12%,transparent),transparent 38%),var(--wt-bg);
+          border:1px solid var(--wt-line); box-shadow:0 10px 28px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.06); }
+        .shell { padding:10px 12px; }
+        .header { display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px; }
+        .title { font-size:17px;font-weight:800;line-height:1.1; }
+        .subtitle { color:var(--wt-muted);font-size:9px;margin-top:3px; }
+        .status { display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid var(--wt-line);background:var(--wt-panel);font-size:9px;font-weight:800;white-space:nowrap; }
+        .dot { width:6px;height:6px;border-radius:50%;background:#8793a1; }
+        .pump-on .dot { background:#55d66f;box-shadow:0 0 8px rgba(85,214,111,.7);animation:pulse 1.6s infinite; }
+        .pump-on { color:#bff7c8;border-color:rgba(85,214,111,.30);background:rgba(85,214,111,.10); }
+        .main { display:grid;grid-template-columns:minmax(145px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
+        .hero { min-height:205px;border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
+        .hero-glow { position:absolute;width:150px;height:150px;border-radius:50%;background:var(--wt-accent);opacity:.07;filter:blur(30px); }
+        .tank-wrap { position:relative;width:105px;height:178px; }
+        .tank { position:absolute;inset:0;overflow:hidden;border-radius:22px 22px 18px 18px;border:2px solid rgba(255,255,255,.27);background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.025) 38%,rgba(255,255,255,.07));box-shadow:inset 8px 0 15px rgba(255,255,255,.045),inset -8px 0 15px rgba(0,0,0,.16),0 10px 22px rgba(0,0,0,.22); }
+        .tank::before { content:"";position:absolute;left:10%;right:10%;top:5px;height:7px;border-radius:50%;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.05);z-index:5; }
+        .water { position:absolute;left:0;right:0;bottom:0;height:${fill}%;background:linear-gradient(180deg,rgba(100,181,246,.92),rgba(33,150,243,.78) 45%,rgba(13,71,161,.88));transition:height 1.2s cubic-bezier(.2,.7,.2,1);box-shadow:0 -5px 18px rgba(33,150,243,.22); }
+        .water::before { content:"";position:absolute;left:-12%;top:-6px;width:124%;height:13px;border-radius:50%;background:rgba(170,225,255,.62);box-shadow:0 0 10px rgba(120,205,255,.45);animation:wave 3s ease-in-out infinite; }
+        .water::after { content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 28px,rgba(255,255,255,.035) 29px 32px);animation:flow 7s linear infinite; }
+        .bubble { position:absolute;bottom:4%;border-radius:50%;background:rgba(255,255,255,.5);opacity:0;animation:rise 5s linear infinite;z-index:2; }
+        .tank-value { position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 2px 8px rgba(0,0,0,.45); }
+        .percent { font-size:27px;font-weight:900;line-height:1; }
+        .liters { margin-top:4px;font-size:10px;font-weight:700;opacity:.92; }
+        .marks { position:absolute;right:-30px;top:0;bottom:0;width:27px; }
+        .marks span { position:absolute;right:0;display:flex;align-items:center;gap:3px;transform:translateY(50%);color:var(--wt-muted);font-size:7px; }
+        .marks b { display:block;width:11px;height:1px;background:rgba(255,255,255,.28); }
+        .side { min-width:0;display:flex;flex-direction:column;gap:7px; }
+        .top-metrics { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px; }
+        .metric { min-width:0;padding:8px 6px;border-radius:10px;background:var(--wt-panel);border:1px solid rgba(255,255,255,.06); }
+        .metric-label { color:var(--wt-muted);font-size:8px;text-transform:uppercase;letter-spacing:.45px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+        .metric-value { margin-top:3px;font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+        .settings { flex:1;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;justify-content:center;gap:6px; }
+        .setting { display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0;font-size:10px; }
+        .setting span { color:var(--wt-muted); }
+        .setting b { font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+        .bottom { display:flex;justify-content:space-between;align-items:center;gap:8px;padding:1px 2px 0;color:var(--wt-muted);font-size:9px; }
+        .bottom strong { color:var(--wt-text);font-size:12px; }
+        @keyframes wave { 0%,100% { transform:translateX(-4%) rotate(-1deg); }50% { transform:translateX(4%) rotate(1deg); } }
         @keyframes flow { to { background-position:180px 0; } }
-        @keyframes rise { 0% { transform:translateY(0) scale(.7); opacity:0; } 12% { opacity:.55; } 90% { opacity:.08; } 100% { transform:translateY(-260px) scale(1.15); opacity:0; } }
+        @keyframes rise { 0% { transform:translateY(0) scale(.7);opacity:0; }12% { opacity:.55; }90% { opacity:.08; }100% { transform:translateY(-160px) scale(1.15);opacity:0; } }
         @keyframes pulse { 50% { opacity:.45; } }
-        @media (max-width:700px) {
-          ha-card { min-height:0; }
-          .shell { padding:14px; }
-          .main { grid-template-columns:1fr; }
-          .hero { min-height:220px; }
-          .tank-wrap { width:110px; height:180px; }
-          .percent { font-size:27px; }
-        }
-        @media (max-width:430px) {
-          .header { align-items:flex-start; }
-          .status { font-size:9px; padding:6px 8px; }
-          .title { font-size:17px; }
-          .metrics { grid-template-columns:1fr 1fr; }
+        @media (max-width:520px) {
+          .shell { padding:9px 10px; }.header { margin-bottom:6px; }.title { font-size:16px; }.subtitle { font-size:8px; }.status { font-size:8px;padding:4px 7px; }
+          .main { grid-template-columns:118px minmax(0,1fr);gap:7px; }.hero { min-height:180px;padding:5px; }.tank-wrap { width:88px;height:150px; }.percent { font-size:24px; }.liters { font-size:9px; }
+          .marks { right:-27px;width:24px; }.marks span { font-size:6px; }.marks b { width:9px; }.top-metrics { gap:4px; }.metric { padding:7px 4px; }.metric-label { font-size:7px; }.metric-value { font-size:10px; }
+          .settings { padding:7px 8px;gap:5px; }.setting,.setting b { font-size:9px; }.bottom { font-size:8px; }.bottom strong { font-size:11px; }
         }
       </style>
 
@@ -444,6 +391,25 @@ class WaterTankCard extends HTMLElement {
                     <div class="percent">${this._fmt(level, 1)}%</div>
                     <div class="liters">${this._fmt(liters, 0)} L</div>
                   </div>
+                </div>
+                <div class="marks">${marks}</div>
+              </div>
+            </section>
+            <section class="side">
+              <div class="top-metrics">
+                <div class="metric"><div class="metric-label">Daily avg</div><div class="metric-value">${average === "—" ? "—" : average + " L/d"}</div></div>
+                <div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven === "—" ? "—" : seven + " L"}</div></div>
+                <div class="metric"><div class="metric-label">Distance</div><div class="metric-value">${distanceText}</div></div>
+              </div>
+              <div class="settings">
+                <div class="setting"><span>Source</span><b>Water Level Sensor</b></div>
+                <div class="setting"><span>Range</span><b>0 → 100%</b></div>
+                <div class="setting"><span>Level</span><b>${this._fmt(level, 1)}%</b></div>
+                <div class="setting"><span>Today</span><b>${today === "—" ? "—" : today + " L"}</b></div>
+              </div>
+            </section>
+          </div>
+          <div class="bottom"><span><strong>${this._fmt(liters, 0)}</strong> Liter left</span><span>Updated ${updated}</span></div>
                 </div>
                 <div class="marks">${marks}</div>
               </div>
