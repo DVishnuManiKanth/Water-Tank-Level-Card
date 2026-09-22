@@ -1,38 +1,46 @@
 # Water Tank Level Card
 
-Combined Home Assistant HACS project: animated tank card + water-consumption sensor.
+A Home Assistant HACS dashboard card based on the Dosing Tank Card implementation by ADNPolymerase.
 
-## HACS
-Repository: https://github.com/DVishnuManiKanth/Water-Tank-Level-Card
+## Features
+- Animated SVG tank
+- Direct level-sensor mode
+- Pump-runtime mode
+- Remaining volume
+- Consumption metrics
+- 7-day consumption chart
+- Low-level warning
+- Adjustable tank settings
+- Responsive/dark-mode friendly UI
+- No external JavaScript dependencies
 
-Install this repository in HACS as a **Dashboard** (Plugin) repository. The dashboard card is installed as `Water-Tank-Level-Card.js`.
+## Installation
+Install this repository through HACS as a Dashboard custom repository.
 
-## Water Tank Integration
-Add **Water Tank** from Settings → Devices & services → Add Integration.
+The repository keeps the existing filename `Water-Tank-Level-Card.js` so existing HACS/resource paths remain compatible.
 
-For the user's 1000 L setup:
-- Level: `sensor.esp8266_text_tank_water_level`
-- Distance: `sensor.esp8266_text_tank_water_level_distance`
-- Pump: `switch.borewell_p110`
-- Capacity: `1000`
-- Maximum valid drop: `5%`
-- Minimum event: `0.5 L`
-
-The sensor exposes total consumption plus attributes `today_liters`, `seven_day_liters`, and `seven_day_average_l_day`.
-
-## Dashboard Card
-
-After installing through HACS, the card resource is:
-`/hacsfiles/Water-Tank-Level-Card/Water-Tank-Level-Card.js`
-
-HACS custom repository type: **Dashboard**.
-
+## Your 1000 L water tank
 
 ```yaml
-type: custom:water-tank-card
+type: custom:dosing-tank-card
 level_entity: sensor.esp8266_text_tank_water_level
-distance_entity: sensor.esp8266_text_tank_water_level_distance
-pump_entity: switch.borewell_p110
-name: Water Tank
-capacity_liters: 1000
+level_full: 100
+level_empty: 0
+capacity: 1000
+capacity_unit: "L"
+name: "Water Tank"
+liquid_color: "#3b82f6"
+alert_threshold_percent: 24
+color_mode: level
+warn_threshold_percent: 50
+layout: columns
+show_chart: true
+last_update: changed
+show_settings: true
 ```
+
+## Upstream
+The card implementation is based on:
+https://github.com/ADNPolymerase/ha-dosing-tank-card
+
+The upstream project is licensed under MIT.
