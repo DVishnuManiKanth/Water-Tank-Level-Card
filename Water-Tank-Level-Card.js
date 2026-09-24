@@ -10,7 +10,8 @@ const DEFAULT_CONFIG = {
   level_entity: "",
   distance_entity: "",
   pump_entity: "",
-  consumption_entity: "",
+  daily_consumption_entity: "",
+  seven_day_consumption_entity: "",
   name: "Water Tank",
   capacity_liters: 1000,
   layout: "columns",
@@ -52,7 +53,11 @@ class WaterTankCard extends HTMLElement {
               selector: { entity: { domain: ["switch", "input_boolean"] } },
             },
             {
-              name: "consumption_entity",
+              name: "daily_consumption_entity",
+              selector: { entity: { domain: "sensor" } },
+            },
+            {
+              name: "seven_day_consumption_entity",
               selector: { entity: { domain: "sensor" } },
             },
           ],
@@ -124,7 +129,8 @@ class WaterTankCard extends HTMLElement {
           level_entity: "Water level entity",
           distance_entity: "Distance entity",
           pump_entity: "Pump entity",
-          consumption_entity: "Consumption entity",
+          daily_consumption_entity: "Daily consumption entity",
+          seven_day_consumption_entity: "7-day consumption entity",
           name: "Tank name",
           capacity_liters: "Tank capacity",
           layout: "Layout",
@@ -137,8 +143,10 @@ class WaterTankCard extends HTMLElement {
           level_entity: "Sensor reporting tank level as 0–100%.",
           distance_entity: "Optional distance sensor, such as 36 cm.",
           pump_entity: "Optional pump entity. ON is shown as Pump ON.",
-          consumption_entity:
-            "Optional Water Consumption sensor. Uses today_liters, seven_day_liters and seven_day_average_l_day attributes.",
+          daily_consumption_entity:
+            "Optional daily consumption sensor. Its state is shown as L/d.",
+          seven_day_consumption_entity:
+            "Optional 7-day consumption sensor. Its state is shown as L.",
           card_height: "Use auto, 500px, 45vh, etc.",
           accent_color: "CSS color such as #2196f3.",
         })[schema.name],
@@ -158,7 +166,8 @@ class WaterTankCard extends HTMLElement {
       level_entity: "sensor.water_level_sensors_tank_water_level",
       distance_entity: "sensor.water_level_sensors_tank_water_level_distance",
       pump_entity: "switch.borewell_p110",
-      consumption_entity: "",
+      daily_consumption_entity: "",
+      seven_day_consumption_entity: "",
       name: "Water Tank",
       capacity_liters: 1000,
       layout: "columns",
@@ -269,21 +278,8 @@ class WaterTankCard extends HTMLElement {
     return Math.floor(seconds / 86400) + " d ago";
   }
 
-  _findConsumptionEntity() {
-    if (this._config.consumption_entity) return this._config.consumption_entity;
-    const states = Object.values(this._hass?.states || {});
-    const found = states.find((s) =>
-      s.entity_id?.startsWith("sensor.") &&
-      (
-        s.attributes?.seven_day_liters !== undefined ||
-        s.attributes?.seven_day_average_l_day !== undefined
-      )
-    );
-    return found?.entity_id || "";
-  }
-
-  _metric(consumption, attr, fallback = "—") {
-    const v = Number(consumption?.attributes?.[attr]);
+  _metricState(entity, fallback = "—") {
+    const v = Number(this._state(entity)?.state);
     return Number.isFinite(v) ? this._fmt(v, 1) : fallback;
   }
 
@@ -294,10 +290,10 @@ class WaterTankCard extends HTMLElement {
     const levelState = this._state(c.level_entity);
     const distanceState = this._state(c.distance_entity);
     const pumpState = this._state(c.pump_entity);
-    const consumptionEntity = c.consumption_entity || "";
-    const consumptionState = this._state(consumptionEntity);
-    const hasDailyAverage = Number.isFinite(Number(consumptionState?.attributes?.seven_day_average_l_day));
-    const hasSevenDay = Number.isFinite(Number(consumptionState?.attributes?.seven_day_liters));
+    const dailyConsumptionState = this._state(c.daily_consumption_entity);
+    const sevenDayConsumptionState = this._state(c.seven_day_consumption_entity);
+    const hasDailyConsumption = !!c.daily_consumption_entity && Number.isFinite(Number(dailyConsumptionState?.state));
+    const hasSevenDayConsumption = !!c.seven_day_consumption_entity && Number.isFinite(Number(sevenDayConsumptionState?.state));
 
     const level = this._clamp(this._number(c.level_entity), 0, 100);
     const capacity = Math.max(1, Number(c.capacity_liters) || 1000);
@@ -311,8 +307,8 @@ class WaterTankCard extends HTMLElement {
       level,
       distanceState?.state,
       pumpState?.state,
-      consumptionState?.state,
-      JSON.stringify(consumptionState?.attributes || {}),
+      dailyConsumptionState?.state,
+      sevenDayConsumptionState?.state,
       c.name,
       c.layout,
       c.capacity_liters,
@@ -330,9 +326,10 @@ class WaterTankCard extends HTMLElement {
     const fill = level;
     const distanceText = Number.isFinite(distance) ? this._fmt(distance, 1) + " cm" : "—";
     const updated = this._relativeTime(levelState?.last_changed);
-    const today = this._metric(consumptionState, "today_liters");
-    const seven = this._metric(consumptionState, "seven_day_liters");
-    const average = this._metric(consumptionState, "seven_day_average_l_day");
+    const today = this._metricState(c.daily_consumption_entity);
+    const seven = this._metricState(c.seven_day_consumption_entity);
+    const dailyUnit = this._esc(dailyConsumptionState?.attributes?.unit_of_measurement || "L/d");
+    const sevenDayUnit = this._esc(sevenDayConsumptionState?.attributes?.unit_of_measurement || "L");
 
     const statusText = pumpState ? (pumpOn ? "Pump ON" : "Pump OFF") : "Pump —";
     const statusClass = pumpOn ? "pump-on" : "pump-off";
@@ -431,16 +428,16 @@ class WaterTankCard extends HTMLElement {
               </div>
             </section>
             <section class="side">
-              <div class="top-metrics" style="grid-template-columns:repeat(${1 + Number(hasDailyAverage) + Number(hasSevenDay)},minmax(0,1fr));">
-                ${hasDailyAverage ? `<div class="metric"><div class="metric-label">Daily avg</div><div class="metric-value">${average} L/d</div></div>` : ""}
-                ${hasSevenDay ? `<div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven} L</div></div>` : ""}
+              <div class="top-metrics" style="grid-template-columns:repeat(${1 + Number(hasDailyConsumption) + Number(hasSevenDayConsumption)},minmax(0,1fr));">
+                ${hasDailyConsumption ? `<div class="metric"><div class="metric-label">Daily</div><div class="metric-value">${today} ${dailyUnit}</div></div>` : ""}
+                ${hasSevenDayConsumption ? `<div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven} ${sevenDayUnit}</div></div>` : ""}
                 <div class="metric"><div class="metric-label">Distance</div><div class="metric-value">${distanceText}</div></div>
               </div>
               <div class="settings">
                 <div class="setting"><span>Source</span><b>Water Level Sensor</b></div>
                 <div class="setting"><span>Range</span><b>0 → 100%</b></div>
                 <div class="setting"><span>Level</span><b>${this._fmt(level, 1)}%</b></div>
-                <div class="setting"><span>Today</span><b>${today === "—" ? "—" : today + " L"}</b></div>
+                ${hasDailyConsumption ? `<div class="setting"><span>Today</span><b>${today} ${dailyUnit}</b></div>` : ""}
               </div>
             </section>
           </div>
