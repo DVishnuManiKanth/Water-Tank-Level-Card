@@ -382,8 +382,8 @@ class WaterTankCard extends HTMLElement {
         .dot { width:6px;height:6px;border-radius:50%;background:#8793a1; }
         .pump-on .dot { background:#55d66f;box-shadow:0 0 8px rgba(85,214,111,.7);animation:pulse 1.6s infinite; }
         .pump-on { color:#bff7c8;border-color:rgba(85,214,111,.30);background:rgba(85,214,111,.10); }
-        .main { display:grid;grid-template-columns:minmax(145px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
-        .hero { min-height:205px;border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
+        .main { display:grid;grid-template-columns:minmax(${tankWidth + 55}px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
+        .hero { min-height:${Math.max(205, tankHeight + 20)}px;border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
         .hero-glow { position:absolute;width:150px;height:150px;border-radius:50%;background:var(--wt-accent);opacity:.07;filter:blur(30px); }
         .tank-wrap { position:relative;width:${tankWidth + 40}px;height:${tankHeight}px; }
         .tank { width:${tankWidth}px;height:${tankHeight}px; }
@@ -423,7 +423,7 @@ class WaterTankCard extends HTMLElement {
         @keyframes pulse { 50% { opacity:.45; } }
         @media (max-width:520px) {
           .shell { padding:9px 10px; }.header { margin-bottom:6px; }.title { font-size:16px; }.subtitle { font-size:8px; }.status { font-size:8px;padding:4px 7px; }
-          .main { grid-template-columns:118px minmax(0,1fr);gap:7px; }.hero { min-height:180px;padding:5px; }.tank-wrap { width:${tankWidth + 32}px;height:${tankHeight}px; }.tank { width:${tankWidth}px;height:${tankHeight}px; }.inlet-pipe { right:-15px;top:21px;transform:scale(.88);transform-origin:right top; }.percent { font-size:24px; }.liters { font-size:9px; }
+          .main { grid-template-columns:minmax(${Math.min(180, tankWidth + 42)}px,${Math.min(180, tankWidth + 42)}px) minmax(0,1fr);gap:7px; }.hero { min-height:${Math.max(180, tankHeight + 14)}px;padding:5px; }.tank-wrap { width:${tankWidth + 32}px;height:${tankHeight}px; }.tank { width:${tankWidth}px;height:${tankHeight}px; }.inlet-pipe { right:-15px;top:21px;transform:scale(.88);transform-origin:right top; }.percent { font-size:24px; }.liters { font-size:9px; }
           .marks { right:-27px;width:24px; }.marks span { font-size:6px; }.marks b { width:9px; }.top-metrics { gap:4px; }.metric { padding:7px 4px; }.metric-label { font-size:7px; }.metric-value { font-size:10px; }
           .settings { padding:7px 8px;gap:5px; }.setting,.setting b { font-size:9px; }.bottom { font-size:8px; }.bottom strong { font-size:11px; }
         }
