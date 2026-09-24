@@ -383,13 +383,6 @@ class WaterTankCard extends HTMLElement {
         .hero { min-height:${Math.max(205, tankHeight + 20)}px;border:none;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible;padding:7px; }
         .tank-wrap { position:relative;width:${tankWidth + 20}px;height:${tankHeight}px; }
         .tank { width:${tankWidth}px;height:${tankHeight}px;left:18px;right:auto;top:0;bottom:auto; }
-        .inlet-pipe { position:absolute;left:-20px;bottom:-1px;width:58px;height:calc(100% - 18px);z-index:10;pointer-events:none; }
-        .pipe-body { position:absolute;left:0;bottom:0;width:15px;height:100%;border-radius:8px 8px 3px 3px;background:linear-gradient(90deg,#455a64,#cfd8dc 48%,#546e7a);border:1px solid rgba(255,255,255,.28);box-shadow:inset 2px 0 2px rgba(255,255,255,.35),0 3px 7px rgba(0,0,0,.25); }
-        .pipe-mouth { position:absolute;left:0;top:8px;width:48px;height:15px;border-radius:8px 4px 4px 8px;background:linear-gradient(180deg,#90a4ae,#455a64,#263238);border:1px solid rgba(255,255,255,.25); }
-        .pipe-mouth::after { content:"";position:absolute;right:-5px;top:2px;width:22px;height:9px;border-radius:2px 6px 6px 2px;background:linear-gradient(180deg,#b0bec5,#546e7a);border:1px solid rgba(255,255,255,.22); }
-        .water-stream { position:absolute;left:48px;top:22px;width:7px;height:62%;border-radius:4px;background:linear-gradient(180deg,rgba(151,219,255,.98),rgba(33,150,243,.38));opacity:0;transform-origin:top; }
-        .pump-flow .water-stream { opacity:.95;animation:waterStream .65s linear infinite; }
-        .pump-flow .pipe-body { box-shadow:inset 2px 0 2px rgba(255,255,255,.35),0 0 10px rgba(33,150,243,.35); }
         .tank { position:absolute;inset:0;overflow:hidden;border-radius:22px 22px 18px 18px;border:2px solid rgba(255,255,255,.27);background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.025) 38%,rgba(255,255,255,.07));box-shadow:inset 8px 0 15px rgba(255,255,255,.045),inset -8px 0 15px rgba(0,0,0,.16),0 10px 22px rgba(0,0,0,.22); }
         .tank::before { content:"";position:absolute;left:10%;right:10%;top:5px;height:7px;border-radius:50%;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.05);z-index:5; }
         .water { position:absolute;left:0;right:0;bottom:0;height:${fill}%;background:linear-gradient(180deg,rgba(100,181,246,.92),rgba(33,150,243,.78) 45%,rgba(13,71,161,.88));transition:height 1.2s cubic-bezier(.2,.7,.2,1);box-shadow:0 -5px 18px rgba(33,150,243,.22); }
@@ -412,7 +405,6 @@ class WaterTankCard extends HTMLElement {
         .bottom strong { color:var(--wt-text);font-size:12px; }
         @keyframes wave { 0%,100% { transform:translateX(-4%) rotate(-1deg); }50% { transform:translateX(4%) rotate(1deg); } }
         @keyframes flow { to { background-position:180px 0; } }
-        @keyframes waterStream { 0% { transform:scaleY(.25);opacity:.25; } 50% { transform:scaleY(1);opacity:1; } 100% { transform:scaleY(.25);opacity:.25; } }
         @keyframes rise { 0% { transform:translateY(0) scale(.7);opacity:0; }12% { opacity:.55; }90% { opacity:.08; }100% { transform:translateY(-160px) scale(1.15);opacity:0; } }
         @keyframes pulse { 50% { opacity:.45; } }
         @media (max-width:520px) {
@@ -438,11 +430,6 @@ class WaterTankCard extends HTMLElement {
           <div class="main">
             <section class="hero">
               <div class="tank-wrap">
-                <div class="inlet-pipe ${pumpOn ? "pump-flow" : ""}" aria-label="${pumpOn ? "Pump water flowing into tank" : "Tank inlet pipe"}">
-                  <div class="pipe-body"></div>
-                  <div class="pipe-mouth"></div>
-                  <div class="water-stream"></div>
-                </div>
                 <div class="tank">
                   <div class="water">${bubbles}</div>
                   <div class="tank-value">
