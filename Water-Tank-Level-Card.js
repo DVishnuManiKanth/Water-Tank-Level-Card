@@ -362,9 +362,6 @@ class WaterTankCard extends HTMLElement {
       return `<i class="bubble" style="left:${left}%;width:${size}px;height:${size}px;animation-delay:${delay}s;animation-duration:${duration}s"></i>`;
     }).join("");
 
-    const marks = [100, 75, 50, 25, 0].map((m) =>
-      `<span style="bottom:${m}%"><b></b>${m}</span>`
-    ).join("");
 
     this.shadowRoot.innerHTML = `
       <style>
@@ -382,10 +379,10 @@ class WaterTankCard extends HTMLElement {
         .dot { width:6px;height:6px;border-radius:50%;background:#8793a1; }
         .pump-on .dot { background:#55d66f;box-shadow:0 0 8px rgba(85,214,111,.7);animation:pulse 1.6s infinite; }
         .pump-on { color:#bff7c8;border-color:rgba(85,214,111,.30);background:rgba(85,214,111,.10); }
-        .main { display:grid;grid-template-columns:minmax(${tankWidth + 55}px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
+        .main { display:grid;grid-template-columns:minmax(130px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
         .hero { min-height:${Math.max(205, tankHeight + 20)}px;border:none;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible;padding:7px; }
-        .tank-wrap { position:relative;width:${tankWidth + 40}px;height:${tankHeight}px;padding-left:18px; }
-        .tank { width:${tankWidth}px;height:${tankHeight}px; }
+        .tank-wrap { position:relative;width:${tankWidth + 20}px;height:${tankHeight}px; }
+        .tank { width:${tankWidth}px;height:${tankHeight}px;left:18px;right:auto;top:0;bottom:auto; }
         .inlet-pipe { position:absolute;left:-20px;bottom:-1px;width:58px;height:calc(100% - 18px);z-index:10;pointer-events:none; }
         .pipe-body { position:absolute;left:0;bottom:0;width:15px;height:100%;border-radius:8px 8px 3px 3px;background:linear-gradient(90deg,#455a64,#cfd8dc 48%,#546e7a);border:1px solid rgba(255,255,255,.28);box-shadow:inset 2px 0 2px rgba(255,255,255,.35),0 3px 7px rgba(0,0,0,.25); }
         .pipe-mouth { position:absolute;left:0;top:8px;width:48px;height:15px;border-radius:8px 4px 4px 8px;background:linear-gradient(180deg,#90a4ae,#455a64,#263238);border:1px solid rgba(255,255,255,.25); }
@@ -402,9 +399,6 @@ class WaterTankCard extends HTMLElement {
         .tank-value { position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 2px 8px rgba(0,0,0,.45); }
         .percent { font-size:27px;font-weight:900;line-height:1; }
         .liters { margin-top:4px;font-size:10px;font-weight:700;opacity:.92; }
-        .marks { position:absolute;right:-30px;top:0;height:100%;width:27px; }
-        .marks span { position:absolute;right:0;display:flex;align-items:center;gap:3px;transform:translateY(50%);color:var(--wt-muted);font-size:clamp(6px,${Math.max(6, Math.min(9, tankHeight / 28))}px,9px);line-height:1; }
-        .marks b { display:block;width:11px;height:1px;background:rgba(255,255,255,.28); }
         .side { min-width:0;display:flex;flex-direction:column;gap:7px; }
         .top-metrics { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px; }
         .metric { min-width:0;padding:8px 6px;border-radius:10px;background:var(--wt-panel);border:1px solid rgba(255,255,255,.06); }
@@ -423,8 +417,8 @@ class WaterTankCard extends HTMLElement {
         @keyframes pulse { 50% { opacity:.45; } }
         @media (max-width:520px) {
           .shell { padding:9px 10px; }.header { margin-bottom:6px; }.title { font-size:16px; }.subtitle { font-size:8px; }.status { font-size:8px;padding:4px 7px; }
-          .main { grid-template-columns:minmax(${Math.min(180, tankWidth + 42)}px,${Math.min(180, tankWidth + 42)}px) minmax(0,1fr);gap:7px; }.hero { min-height:${Math.max(180, tankHeight + 14)}px;border:none;background:transparent;padding:5px; }.tank-wrap { width:${tankWidth + 48}px;height:${tankHeight}px;padding-left:18px; }.tank { width:${tankWidth}px;height:${tankHeight}px; }.inlet-pipe { left:-1px;bottom:-1px;transform:scale(.88);transform-origin:left bottom; }.percent { font-size:24px; }.liters { font-size:9px; }
-          .marks { right:-27px;width:24px; }.marks span { font-size:clamp(5px,${Math.max(5, Math.min(8, tankHeight / 32))}px,8px); }.marks b { width:9px; }.top-metrics { gap:4px; }.metric { padding:7px 4px; }.metric-label { font-size:7px; }.metric-value { font-size:10px; }
+          .main { grid-template-columns:minmax(${Math.min(180, tankWidth + 42)}px,${Math.min(180, tankWidth + 42)}px) minmax(0,1fr);gap:7px; }.hero { min-height:${Math.max(180, tankHeight + 14)}px;border:none;background:transparent;padding:5px; }.tank-wrap { width:${tankWidth + 20}px;height:${tankHeight}px; }.tank { width:${tankWidth}px;height:${tankHeight}px;left:15px;right:auto;top:0;bottom:auto; }.inlet-pipe { left:-1px;bottom:-1px;transform:scale(.88);transform-origin:left bottom; }.percent { font-size:24px; }.liters { font-size:9px; }
+          .top-metrics { gap:4px; }.metric { padding:7px 4px; }.metric-label { font-size:7px; }.metric-value { font-size:10px; }
           .settings { padding:7px 8px;gap:5px; }.setting,.setting b { font-size:9px; }.bottom { font-size:8px; }.bottom strong { font-size:11px; }
         }
       </style>
@@ -456,7 +450,6 @@ class WaterTankCard extends HTMLElement {
                     <div class="liters">${this._fmt(liters, 0)} L</div>
                   </div>
                 </div>
-                <div class="marks">${marks}</div>
               </div>
             </section>
             <section class="side">
