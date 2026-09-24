@@ -365,7 +365,13 @@ class WaterTankCard extends HTMLElement {
         .main { display:grid;grid-template-columns:minmax(145px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
         .hero { min-height:205px;border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
         .hero-glow { position:absolute;width:150px;height:150px;border-radius:50%;background:var(--wt-accent);opacity:.07;filter:blur(30px); }
-        .tank-wrap { position:relative;width:105px;height:178px; }
+        .tank-wrap { position:relative;width:145px;height:178px; }
+        .inlet-pipe { position:absolute;right:-20px;top:25px;width:54px;height:14px;z-index:7; }
+        .pipe-body { position:absolute;left:0;top:0;width:43px;height:14px;border-radius:7px;background:linear-gradient(180deg,#cfd8dc,#78909c 48%,#455a64);border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 2px 2px rgba(255,255,255,.35),0 3px 7px rgba(0,0,0,.25); }
+        .pipe-mouth { position:absolute;right:1px;top:-3px;width:9px;height:20px;border-radius:4px;background:linear-gradient(90deg,#455a64,#90a4ae,#37474f);border:1px solid rgba(255,255,255,.25); }
+        .water-stream { position:absolute;right:4px;top:15px;width:5px;height:48px;border-radius:4px;background:linear-gradient(180deg,rgba(151,219,255,.95),rgba(33,150,243,.65));opacity:0;transform-origin:top; }
+        .pump-flow .water-stream { opacity:.95;animation:waterStream .65s linear infinite; }
+        .pump-flow .pipe-body { box-shadow:inset 0 2px 2px rgba(255,255,255,.35),0 0 10px rgba(33,150,243,.35); }
         .tank { position:absolute;inset:0;overflow:hidden;border-radius:22px 22px 18px 18px;border:2px solid rgba(255,255,255,.27);background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.025) 38%,rgba(255,255,255,.07));box-shadow:inset 8px 0 15px rgba(255,255,255,.045),inset -8px 0 15px rgba(0,0,0,.16),0 10px 22px rgba(0,0,0,.22); }
         .tank::before { content:"";position:absolute;left:10%;right:10%;top:5px;height:7px;border-radius:50%;border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.05);z-index:5; }
         .water { position:absolute;left:0;right:0;bottom:0;height:${fill}%;background:linear-gradient(180deg,rgba(100,181,246,.92),rgba(33,150,243,.78) 45%,rgba(13,71,161,.88));transition:height 1.2s cubic-bezier(.2,.7,.2,1);box-shadow:0 -5px 18px rgba(33,150,243,.22); }
@@ -391,11 +397,12 @@ class WaterTankCard extends HTMLElement {
         .bottom strong { color:var(--wt-text);font-size:12px; }
         @keyframes wave { 0%,100% { transform:translateX(-4%) rotate(-1deg); }50% { transform:translateX(4%) rotate(1deg); } }
         @keyframes flow { to { background-position:180px 0; } }
+        @keyframes waterStream { 0% { transform:scaleY(.65);opacity:.35; } 50% { transform:scaleY(1);opacity:1; } 100% { transform:scaleY(.65);opacity:.35; } }
         @keyframes rise { 0% { transform:translateY(0) scale(.7);opacity:0; }12% { opacity:.55; }90% { opacity:.08; }100% { transform:translateY(-160px) scale(1.15);opacity:0; } }
         @keyframes pulse { 50% { opacity:.45; } }
         @media (max-width:520px) {
           .shell { padding:9px 10px; }.header { margin-bottom:6px; }.title { font-size:16px; }.subtitle { font-size:8px; }.status { font-size:8px;padding:4px 7px; }
-          .main { grid-template-columns:118px minmax(0,1fr);gap:7px; }.hero { min-height:180px;padding:5px; }.tank-wrap { width:88px;height:150px; }.percent { font-size:24px; }.liters { font-size:9px; }
+          .main { grid-template-columns:118px minmax(0,1fr);gap:7px; }.hero { min-height:180px;padding:5px; }.tank-wrap { width:125px;height:150px; }.inlet-pipe { right:-15px;top:21px;transform:scale(.88);transform-origin:right top; }.percent { font-size:24px; }.liters { font-size:9px; }
           .marks { right:-27px;width:24px; }.marks span { font-size:6px; }.marks b { width:9px; }.top-metrics { gap:4px; }.metric { padding:7px 4px; }.metric-label { font-size:7px; }.metric-value { font-size:10px; }
           .settings { padding:7px 8px;gap:5px; }.setting,.setting b { font-size:9px; }.bottom { font-size:8px; }.bottom strong { font-size:11px; }
         }
@@ -417,6 +424,11 @@ class WaterTankCard extends HTMLElement {
             <section class="hero">
               <div class="hero-glow"></div>
               <div class="tank-wrap">
+                <div class="inlet-pipe ${pumpOn ? "pump-flow" : ""}">
+                  <div class="pipe-body"></div>
+                  <div class="pipe-mouth"></div>
+                  <div class="water-stream"></div>
+                </div>
                 <div class="tank">
                   <div class="water">${bubbles}</div>
                   <div class="tank-value">
