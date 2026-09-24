@@ -294,8 +294,10 @@ class WaterTankCard extends HTMLElement {
     const levelState = this._state(c.level_entity);
     const distanceState = this._state(c.distance_entity);
     const pumpState = this._state(c.pump_entity);
-    const consumptionEntity = this._findConsumptionEntity();
+    const consumptionEntity = c.consumption_entity || "";
     const consumptionState = this._state(consumptionEntity);
+    const hasDailyAverage = Number.isFinite(Number(consumptionState?.attributes?.seven_day_average_l_day));
+    const hasSevenDay = Number.isFinite(Number(consumptionState?.attributes?.seven_day_liters));
 
     const level = this._clamp(this._number(c.level_entity), 0, 100);
     const capacity = Math.max(1, Number(c.capacity_liters) || 1000);
@@ -429,9 +431,9 @@ class WaterTankCard extends HTMLElement {
               </div>
             </section>
             <section class="side">
-              <div class="top-metrics">
-                <div class="metric"><div class="metric-label">Daily avg</div><div class="metric-value">${average === "—" ? "—" : average + " L/d"}</div></div>
-                <div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven === "—" ? "—" : seven + " L"}</div></div>
+              <div class="top-metrics" style="grid-template-columns:repeat(${1 + Number(hasDailyAverage) + Number(hasSevenDay)},minmax(0,1fr));">
+                ${hasDailyAverage ? `<div class="metric"><div class="metric-label">Daily avg</div><div class="metric-value">${average} L/d</div></div>` : ""}
+                ${hasSevenDay ? `<div class="metric"><div class="metric-label">7 days</div><div class="metric-value">${seven} L</div></div>` : ""}
                 <div class="metric"><div class="metric-label">Distance</div><div class="metric-value">${distanceText}</div></div>
               </div>
               <div class="settings">
