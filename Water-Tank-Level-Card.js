@@ -294,9 +294,9 @@ class WaterTankCard extends HTMLElement {
     return Math.floor(seconds / 86400) + " d ago";
   }
 
-  _metricState(entity, fallback = "—") {
+  _metricState(entity, fallback = "—", decimals = 0) {
     const v = Number(this._state(entity)?.state);
-    return Number.isFinite(v) ? this._fmt(v, 1) : fallback;
+    return Number.isFinite(v) ? this._fmt(v, decimals) : fallback;
   }
 
   _render(force = false) {
@@ -344,10 +344,10 @@ class WaterTankCard extends HTMLElement {
     const tankHeight = Math.max(80, Number(c.tank_height) || 178);
     const accent = this._esc(c.accent_color || "#2196f3");
     const fill = level;
-    const distanceText = Number.isFinite(distance) ? this._fmt(distance, 1) + " cm" : "—";
+    const distanceText = Number.isFinite(distance) ? this._fmt(distance, 0) + " cm" : "—";
     const updated = this._relativeTime(levelState?.last_changed);
-    const today = this._metricState(c.daily_consumption_entity);
-    const seven = this._metricState(c.seven_day_consumption_entity);
+    const today = this._metricState(c.daily_consumption_entity, "—", 0);
+    const seven = this._metricState(c.seven_day_consumption_entity, "—", 0);
     const dailyUnit = this._esc(dailyConsumptionState?.attributes?.unit_of_measurement || "L/d");
     const sevenDayUnit = this._esc(sevenDayConsumptionState?.attributes?.unit_of_measurement || "L");
 
@@ -433,7 +433,7 @@ class WaterTankCard extends HTMLElement {
                 <div class="tank">
                   <div class="water">${bubbles}</div>
                   <div class="tank-value">
-                    <div class="percent">${this._fmt(level, 1)}%</div>
+                    <div class="percent">${this._fmt(Math.round(level), 0)}%</div>
                     <div class="liters">${this._fmt(liters, 0)} L</div>
                   </div>
                 </div>
@@ -448,7 +448,7 @@ class WaterTankCard extends HTMLElement {
               <div class="settings">
                 <div class="setting"><span>Source</span><b>Water Level Sensor</b></div>
                 <div class="setting"><span>Range</span><b>0 → 100%</b></div>
-                <div class="setting"><span>Level</span><b>${this._fmt(level, 1)}%</b></div>
+                <div class="setting"><span>Level</span><b>${this._fmt(Math.round(level), 0)}%</b></div>
                 ${hasDailyConsumption ? `<div class="setting"><span>Today</span><b>${today} ${dailyUnit}</b></div>` : ""}
               </div>
             </section>
