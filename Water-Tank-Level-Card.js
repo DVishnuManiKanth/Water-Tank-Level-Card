@@ -383,8 +383,7 @@ class WaterTankCard extends HTMLElement {
         .pump-on .dot { background:#55d66f;box-shadow:0 0 8px rgba(85,214,111,.7);animation:pulse 1.6s infinite; }
         .pump-on { color:#bff7c8;border-color:rgba(85,214,111,.30);background:rgba(85,214,111,.10); }
         .main { display:grid;grid-template-columns:minmax(${tankWidth + 55}px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
-        .hero { min-height:${Math.max(205, tankHeight + 20)}px;border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
-        .hero-glow { position:absolute;width:150px;height:150px;border-radius:50%;background:var(--wt-accent);opacity:.07;filter:blur(30px); }
+        .hero { min-height:${Math.max(205, tankHeight + 20)}px;border:1px solid var(--wt-line);background:none;border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
         .tank-wrap { position:relative;width:${tankWidth + 40}px;height:${tankHeight}px;padding-left:18px; }
         .tank { width:${tankWidth}px;height:${tankHeight}px; }
         .inlet-pipe { position:absolute;left:-20px;bottom:-1px;width:58px;height:calc(100% - 18px);z-index:10;pointer-events:none; }
@@ -444,7 +443,6 @@ class WaterTankCard extends HTMLElement {
 
           <div class="main">
             <section class="hero">
-              <div class="hero-glow"></div>
               <div class="tank-wrap">
                 <div class="inlet-pipe ${pumpOn ? "pump-flow" : ""}" aria-label="${pumpOn ? "Pump water flowing into tank" : "Tank inlet pipe"}">
                   <div class="pipe-body"></div>
