@@ -16,6 +16,8 @@ const DEFAULT_CONFIG = {
   capacity_liters: 1000,
   layout: "columns",
   card_height: "auto",
+  tank_width: 105,
+  tank_height: 178,
   border_radius: 24,
   accent_color: "#2196f3",
 };
@@ -106,6 +108,14 @@ class WaterTankCard extends HTMLElement {
               selector: { text: {} },
             },
             {
+              name: "tank_width",
+              selector: { number: { min: 50, max: 300, step: 1, mode: "slider", unit_of_measurement: "px" } },
+            },
+            {
+              name: "tank_height",
+              selector: { number: { min: 80, max: 500, step: 1, mode: "slider", unit_of_measurement: "px" } },
+            },
+            {
               name: "border_radius",
               selector: {
                 number: {
@@ -135,6 +145,8 @@ class WaterTankCard extends HTMLElement {
           capacity_liters: "Tank capacity",
           layout: "Layout",
           card_height: "Card height",
+          tank_width: "Tank width",
+          tank_height: "Tank height",
           border_radius: "Corner radius",
           accent_color: "Accent color",
         })[schema.name] || schema.name,
@@ -148,6 +160,8 @@ class WaterTankCard extends HTMLElement {
           seven_day_consumption_entity:
             "Optional 7-day consumption sensor. Its state is shown as L.",
           card_height: "Use auto, 500px, 45vh, etc.",
+          tank_width: "Width of the animated water tank.",
+          tank_height: "Height of the animated water tank.",
           accent_color: "CSS color such as #2196f3.",
         })[schema.name],
       assertConfig: (config) => {
@@ -172,6 +186,8 @@ class WaterTankCard extends HTMLElement {
       capacity_liters: 1000,
       layout: "columns",
       card_height: "auto",
+      tank_width: 105,
+      tank_height: 178,
       border_radius: 24,
       accent_color: "#2196f3",
     };
@@ -313,6 +329,8 @@ class WaterTankCard extends HTMLElement {
       c.layout,
       c.capacity_liters,
       c.card_height,
+      c.tank_width,
+      c.tank_height,
       c.border_radius,
       c.accent_color,
     ].join("|");
@@ -322,6 +340,8 @@ class WaterTankCard extends HTMLElement {
 
     const name = this._esc(c.name || "Water Tank");
     const radius = Number(c.border_radius ?? 24);
+    const tankWidth = Math.max(50, Number(c.tank_width) || 105);
+    const tankHeight = Math.max(80, Number(c.tank_height) || 178);
     const accent = this._esc(c.accent_color || "#2196f3");
     const fill = level;
     const distanceText = Number.isFinite(distance) ? this._fmt(distance, 1) + " cm" : "—";
@@ -365,7 +385,8 @@ class WaterTankCard extends HTMLElement {
         .main { display:grid;grid-template-columns:minmax(145px,.72fr) minmax(0,1.28fr);gap:9px;align-items:stretch; }
         .hero { min-height:205px;border:1px solid var(--wt-line);background:rgba(255,255,255,.035);border-radius:14px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:7px; }
         .hero-glow { position:absolute;width:150px;height:150px;border-radius:50%;background:var(--wt-accent);opacity:.07;filter:blur(30px); }
-        .tank-wrap { position:relative;width:145px;height:178px; }
+        .tank-wrap { position:relative;width:${tankWidth + 40}px;height:${tankHeight}px; }
+        .tank { width:${tankWidth}px;height:${tankHeight}px; }
         .inlet-pipe { position:absolute;right:-20px;top:25px;width:54px;height:14px;z-index:7; }
         .pipe-body { position:absolute;left:0;top:0;width:43px;height:14px;border-radius:7px;background:linear-gradient(180deg,#cfd8dc,#78909c 48%,#455a64);border:1px solid rgba(255,255,255,.28);box-shadow:inset 0 2px 2px rgba(255,255,255,.35),0 3px 7px rgba(0,0,0,.25); }
         .pipe-mouth { position:absolute;right:1px;top:-3px;width:9px;height:20px;border-radius:4px;background:linear-gradient(90deg,#455a64,#90a4ae,#37474f);border:1px solid rgba(255,255,255,.25); }
@@ -402,7 +423,7 @@ class WaterTankCard extends HTMLElement {
         @keyframes pulse { 50% { opacity:.45; } }
         @media (max-width:520px) {
           .shell { padding:9px 10px; }.header { margin-bottom:6px; }.title { font-size:16px; }.subtitle { font-size:8px; }.status { font-size:8px;padding:4px 7px; }
-          .main { grid-template-columns:118px minmax(0,1fr);gap:7px; }.hero { min-height:180px;padding:5px; }.tank-wrap { width:125px;height:150px; }.inlet-pipe { right:-15px;top:21px;transform:scale(.88);transform-origin:right top; }.percent { font-size:24px; }.liters { font-size:9px; }
+          .main { grid-template-columns:118px minmax(0,1fr);gap:7px; }.hero { min-height:180px;padding:5px; }.tank-wrap { width:${tankWidth + 32}px;height:${tankHeight}px; }.tank { width:${tankWidth}px;height:${tankHeight}px; }.inlet-pipe { right:-15px;top:21px;transform:scale(.88);transform-origin:right top; }.percent { font-size:24px; }.liters { font-size:9px; }
           .marks { right:-27px;width:24px; }.marks span { font-size:6px; }.marks b { width:9px; }.top-metrics { gap:4px; }.metric { padding:7px 4px; }.metric-label { font-size:7px; }.metric-value { font-size:10px; }
           .settings { padding:7px 8px;gap:5px; }.setting,.setting b { font-size:9px; }.bottom { font-size:8px; }.bottom strong { font-size:11px; }
         }
