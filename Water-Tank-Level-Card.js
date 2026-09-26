@@ -131,6 +131,22 @@ class WaterTankCard extends HTMLElement {
               name: "accent_color",
               selector: { text: {} },
             },
+            {
+              name: "show_source",
+              selector: { boolean: {} },
+            },
+            {
+              name: "show_range",
+              selector: { boolean: {} },
+            },
+            {
+              name: "show_level",
+              selector: { boolean: {} },
+            },
+            {
+              name: "show_today",
+              selector: { boolean: {} },
+            },
           ],
         },
       ],
@@ -149,6 +165,10 @@ class WaterTankCard extends HTMLElement {
           tank_height: "Tank height",
           border_radius: "Corner radius",
           accent_color: "Accent color",
+          show_source: "Show Source",
+          show_range: "Show Range",
+          show_level: "Show Level",
+          show_today: "Show Today",
         })[schema.name] || schema.name,
       computeHelper: (schema) =>
         ({
@@ -163,6 +183,10 @@ class WaterTankCard extends HTMLElement {
           tank_width: "Width of the animated water tank.",
           tank_height: "Height of the animated water tank.",
           accent_color: "CSS color such as #2196f3.",
+          show_source: "Show or hide the Source row.",
+          show_range: "Show or hide the Range row.",
+          show_level: "Show or hide the Level row.",
+          show_today: "Show or hide the Today row.",
         })[schema.name],
       assertConfig: (config) => {
         if (!config.level_entity) {
@@ -190,6 +214,10 @@ class WaterTankCard extends HTMLElement {
       tank_height: 178,
       border_radius: 24,
       accent_color: "#2196f3",
+      show_source: true,
+      show_range: true,
+      show_level: true,
+      show_today: true,
     };
   }
 
@@ -333,6 +361,10 @@ class WaterTankCard extends HTMLElement {
       c.tank_height,
       c.border_radius,
       c.accent_color,
+      c.show_source,
+      c.show_range,
+      c.show_level,
+      c.show_today,
     ].join("|");
 
     if (!force && signature === this._lastSignature) return;
@@ -350,6 +382,10 @@ class WaterTankCard extends HTMLElement {
     const seven = this._metricState(c.seven_day_consumption_entity, "—", 0);
     const dailyUnit = this._esc(dailyConsumptionState?.attributes?.unit_of_measurement || "L/d");
     const sevenDayUnit = this._esc(sevenDayConsumptionState?.attributes?.unit_of_measurement || "L");
+    const showSource = c.show_source !== false;
+    const showRange = c.show_range !== false;
+    const showLevel = c.show_level !== false;
+    const showToday = c.show_today !== false && hasDailyConsumption;
 
     const statusText = pumpState ? (pumpOn ? "Pump ON" : "Pump OFF") : "Pump —";
     const statusClass = pumpOn ? "pump-on" : "pump-off";
@@ -435,7 +471,6 @@ class WaterTankCard extends HTMLElement {
                   <div class="water">${bubbles}</div>
                   <div class="tank-value">
                     <div class="percent">${this._fmt(Math.round(level), 0)}%</div>
-                    <div class="liters">${this._fmt(liters, 0)} L</div>
                   </div>
                 </div>
               </div>
@@ -447,10 +482,10 @@ class WaterTankCard extends HTMLElement {
                 <div class="metric"><div class="metric-label">Distance</div><div class="metric-value">${distanceText}</div></div>
               </div>
               <div class="settings">
-                <div class="setting"><span>Source</span><b>Water Level Sensor</b></div>
-                <div class="setting"><span>Range</span><b>0 → 100%</b></div>
-                <div class="setting"><span>Level</span><b>${this._fmt(Math.round(level), 0)}%</b></div>
-                ${hasDailyConsumption ? `<div class="setting"><span>Today</span><b>${today} ${dailyUnit}</b></div>` : ""}
+${showSource ? `<div class="setting"><span>Source</span><b>Water Level Sensor</b></div>` : ""}
+                ${showRange ? `<div class="setting"><span>Range</span><b>0 → 100%</b></div>` : ""}
+                ${showLevel ? `<div class="setting"><span>Level</span><b>${this._fmt(Math.round(level), 0)}%</b></div>` : ""}
+                ${showToday ? `<div class="setting"><span>Today</span><b>${today} ${dailyUnit}</b></div>` : ""}
               </div>
             </section>
           </div>
