@@ -20,6 +20,7 @@ const DEFAULT_CONFIG = {
   tank_height: 178,
   border_radius: 24,
   accent_color: "#2196f3",
+  percentage_size: 27,
   alert_threshold_percent: 24,
 };
 
@@ -133,6 +134,18 @@ class WaterTankCard extends HTMLElement {
               selector: { text: {} },
             },
             {
+              name: "percentage_size",
+              selector: {
+                number: {
+                  min: 12,
+                  max: 60,
+                  step: 1,
+                  mode: "slider",
+                  unit_of_measurement: "px",
+                },
+              },
+            },
+            {
               name: "show_source",
               selector: { boolean: {} },
             },
@@ -170,6 +183,7 @@ class WaterTankCard extends HTMLElement {
           tank_height: "Tank height",
           border_radius: "Corner radius",
           accent_color: "Accent color",
+          percentage_size: "Percentage size",
           show_source: "Show Source",
           show_range: "Show Range",
           show_level: "Show Level",
@@ -189,6 +203,7 @@ class WaterTankCard extends HTMLElement {
           tank_width: "Width of the animated water tank.",
           tank_height: "Height of the animated water tank.",
           accent_color: "CSS color such as #2196f3.",
+          percentage_size: "Size of the percentage shown inside the tank.",
           show_source: "Show or hide the Source row.",
           show_range: "Show or hide the Range row.",
           show_level: "Show or hide the Level row.",
@@ -221,6 +236,7 @@ class WaterTankCard extends HTMLElement {
       tank_height: 178,
       border_radius: 24,
       accent_color: "#2196f3",
+      percentage_size: 27,
       show_source: true,
       show_range: true,
       show_level: true,
@@ -369,6 +385,7 @@ class WaterTankCard extends HTMLElement {
       c.tank_height,
       c.border_radius,
       c.accent_color,
+      c.percentage_size,
       c.show_source,
       c.show_range,
       c.show_level,
@@ -384,6 +401,7 @@ class WaterTankCard extends HTMLElement {
     const tankWidth = Math.max(50, Number(c.tank_width) || 105);
     const tankHeight = Math.max(80, Number(c.tank_height) || 178);
     const accent = this._esc(c.accent_color || "#2196f3");
+    const percentageSize = this._clamp(Number(c.percentage_size ?? 27), 12, 60);
     const fill = level;
     const distanceText = Number.isFinite(distance) ? this._fmt(distance, 0) + " cm" : "—";
     const updated = this._relativeTime(levelState?.last_changed);
@@ -439,7 +457,7 @@ class WaterTankCard extends HTMLElement {
         .water::after { content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 28px,rgba(255,255,255,.035) 29px 32px);animation:flow 7s linear infinite; }
         .bubble { position:absolute;bottom:4%;border-radius:50%;background:color-mix(in srgb,var(--primary-text-color) 35%,transparent);opacity:0;animation:rise 5s linear infinite;z-index:2; }
         .tank-value { position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 2px 8px color-mix(in srgb,var(--primary-text-color) 30%,transparent); }
-        .percent { font-size:27px;font-weight:900;line-height:1; }
+        .percent { font-size:${percentageSize}px;font-weight:900;line-height:1; }
         .liters { margin-top:4px;font-size:10px;font-weight:700;opacity:.92; }
         .side { min-width:0;display:flex;flex-direction:column;gap:7px; }
         .top-metrics { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px; }
