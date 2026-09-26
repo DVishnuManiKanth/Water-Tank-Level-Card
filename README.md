@@ -51,11 +51,17 @@ The card provides a Home Assistant visual editor for configuring:
 
 ## Preview
 
-### Preview
+### Dark Theme
 
-<img src="https://raw.githubusercontent.com/DVishnuManiKanTh/Water-Tank-Level-Card/main/assets/water-tank-dark.webp" alt="Water Tank Level Card" width="360">
+<img src="https://raw.githubusercontent.com/DVishnuManiKanTh/Water-Tank-Level-Card/main/assets/water-tank-dark.webp" alt="Water Tank Level Card - Dark Theme" width="280">
 
-The repository preview uses the same Water Tank Card design shown above.
+### Light Theme
+
+<img src="https://raw.githubusercontent.com/DVishnuManiKanTh/Water-Tank-Level-Card/main/assets/water-tank-light.jpg" alt="Water Tank Level Card - Light Theme" width="280">
+
+### Animated Preview
+
+<img src="https://raw.githubusercontent.com/DVishnuManiKanTh/Water-Tank-Level-Card/main/assets/water-tank-preview.gif" alt="Water Tank Level Card - Animated Preview" width="280">
 
 ## ☕ Support the project
 
