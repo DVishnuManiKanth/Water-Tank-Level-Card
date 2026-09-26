@@ -49,6 +49,14 @@ The card provides a Home Assistant visual editor for configuring:
 - Show/hide Source, Range, Level, and Today details
 - Low-water alert threshold
 
+## Preview
+
+### Dark Theme
+
+![Water Tank Level Card - Dark Theme](assets/water-tank-dark.webp)
+
+The repository preview uses the same Water Tank Card design shown above.
+
 ## ☕ Support the project
 
 If this card is useful to you, you can support its continued development:
