@@ -477,7 +477,7 @@ class WaterTankCard extends HTMLElement {
         @media (max-width:520px) {
           .shell { padding:9px 10px; }.header { margin-bottom:6px; }.title { font-size:16px; }.subtitle { font-size:8px; }.status { font-size:8px;padding:4px 7px; }
           .main { grid-template-columns:minmax(${Math.min(180, tankWidth + 42)}px,${Math.min(180, tankWidth + 42)}px) minmax(0,1fr);gap:7px; }.hero { min-height:${Math.max(180, tankHeight + 14)}px;padding:5px; }.tank-wrap { width:${tankWidth + 20}px;height:${tankHeight}px; }.tank { width:${tankWidth}px;height:${tankHeight}px;left:15px;right:auto;top:0;bottom:auto; }
-.percent { font-size:24px; }.liters { font-size:9px; }
+.percent { font-size:${percentageSize}px; }.liters { font-size:9px; }
           .top-metrics { gap:4px; }.metric { padding:7px 4px; }.metric-label { font-size:7px; }.metric-value { font-size:10px; }
           .settings { padding:7px 8px;gap:5px; }.setting,.setting b { font-size:9px; }.bottom { font-size:8px; }.bottom strong { font-size:11px; }
         }
