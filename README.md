@@ -44,3 +44,11 @@ The card implementation is based on:
 https://github.com/ADNPolymerase/ha-dosing-tank-card
 
 The upstream project is licensed under MIT.
+
+## ☕ Support the project
+
+If this card is useful to you, you can support its continued development:
+
+[![Buy Me a Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=DVishnuManiKanTh&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/DVishnuManiKanTh)
+
+**Note:** Your support helps me continue improving and maintaining the Water Tank Level Card.
