@@ -1,5 +1,7 @@
 [![Buy Me a Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=DVishnuManiKanTh&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/DVishnuManiKanTh)
 
+**Note:** Your support helps me continue improving and maintaining the Water Tank Level Card. ☕
+
 # Water Tank Level Card
 
 A custom Home Assistant Lovelace card for monitoring a water tank with an animated glass-style tank, live water level, pump status, distance, consumption metrics, low-water alerts, and responsive light/dark theme support.
