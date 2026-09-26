@@ -20,6 +20,7 @@ const DEFAULT_CONFIG = {
   tank_height: 178,
   border_radius: 24,
   accent_color: "#2196f3",
+  alert_threshold_percent: 24,
 };
 
 class WaterTankCard extends HTMLElement {
@@ -147,6 +148,10 @@ class WaterTankCard extends HTMLElement {
               name: "show_today",
               selector: { boolean: {} },
             },
+            {
+              name: "alert_threshold_percent",
+              selector: { number: { min: 0, max: 100, step: 1, mode: "slider", unit_of_measurement: "%" } },
+            },
           ],
         },
       ],
@@ -169,6 +174,7 @@ class WaterTankCard extends HTMLElement {
           show_range: "Show Range",
           show_level: "Show Level",
           show_today: "Show Today",
+          alert_threshold_percent: "Alert at",
         })[schema.name] || schema.name,
       computeHelper: (schema) =>
         ({
@@ -187,6 +193,7 @@ class WaterTankCard extends HTMLElement {
           show_range: "Show or hide the Range row.",
           show_level: "Show or hide the Level row.",
           show_today: "Show or hide the Today row.",
+          alert_threshold_percent: "Low-water alert threshold.",
         })[schema.name],
       assertConfig: (config) => {
         if (!config.level_entity) {
@@ -218,6 +225,7 @@ class WaterTankCard extends HTMLElement {
       show_range: true,
       show_level: true,
       show_today: true,
+      alert_threshold_percent: 24,
     };
   }
 
@@ -365,6 +373,7 @@ class WaterTankCard extends HTMLElement {
       c.show_range,
       c.show_level,
       c.show_today,
+      c.alert_threshold_percent,
     ].join("|");
 
     if (!force && signature === this._lastSignature) return;
@@ -386,6 +395,8 @@ class WaterTankCard extends HTMLElement {
     const showRange = c.show_range !== false;
     const showLevel = c.show_level !== false;
     const showToday = c.show_today !== false && hasDailyConsumption;
+    const alertThreshold = this._clamp(Number(c.alert_threshold_percent ?? 24), 0, 100);
+    const lowWater = level <= alertThreshold;
 
     const statusText = pumpState ? (pumpOn ? "Pump ON" : "Pump OFF") : "Pump —";
     const statusClass = pumpOn ? "pump-on" : "pump-off";
@@ -412,6 +423,8 @@ class WaterTankCard extends HTMLElement {
         .title { font-size:17px;font-weight:800;line-height:1.1; }
         .subtitle { color:var(--wt-muted);font-size:9px;margin-top:3px; }
         .status { display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid var(--wt-line);background:var(--wt-panel);font-size:9px;font-weight:800;white-space:nowrap; }
+        .low-water { color:#ffb4ab;border-color:rgba(255,82,82,.35);background:rgba(255,82,82,.10); }
+        .low-water .dot { background:#ff5252;box-shadow:0 0 8px rgba(255,82,82,.65);animation:pulse 1.2s infinite; }
         .dot { width:6px;height:6px;border-radius:50%;background:#8793a1; }
         .pump-on .dot { background:#55d66f;box-shadow:0 0 8px rgba(85,214,111,.7);animation:pulse 1.6s infinite; }
         .pump-on { color:#bff7c8;border-color:rgba(85,214,111,.30);background:rgba(85,214,111,.10); }
@@ -459,8 +472,8 @@ class WaterTankCard extends HTMLElement {
               <div class="title">${name}</div>
               <div class="subtitle">Live tank level • ${this._fmt(capacity, 0)} L capacity</div>
             </div>
-            <div class="status ${statusClass}">
-              <span class="dot"></span>${statusText}
+            <div class="status ${statusClass} ${lowWater ? "low-water" : ""}">
+              <span class="dot"></span>${lowWater ? "Low Water" : statusText}
             </div>
           </div>
 
