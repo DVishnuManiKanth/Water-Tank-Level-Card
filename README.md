@@ -1,49 +1,53 @@
 # Water Tank Level Card
 
-A Home Assistant HACS dashboard card based on the Dosing Tank Card implementation by ADNPolymerase.
+A custom Home Assistant Lovelace card for monitoring a water tank with an animated glass-style tank, live water level, pump status, distance, consumption metrics, low-water alerts, and responsive light/dark theme support.
 
 ## Features
-- Animated SVG tank
-- Direct level-sensor mode
-- Pump-runtime mode
-- Remaining volume
-- Consumption metrics
-- 7-day consumption chart
-- Low-level warning
-- Adjustable tank settings
-- Responsive/dark-mode friendly UI
+
+- Animated glass-style water tank with smooth water-level animation
+- Live water level displayed as percentage
+- Tank capacity and remaining water in liters
+- Optional distance sensor
+- Pump ON/OFF status
+- Optional daily water consumption
+- Optional 7-day water consumption
+- Configurable low-water alert threshold
+- Visual editor support for card settings and display options
+- Adjustable tank width, height, corner radius, and accent color
+- Automatic Home Assistant light and dark theme support
+- Live "Updated X sec/min ago" display
+- Responsive layout for desktop and mobile dashboards
 - No external JavaScript dependencies
 
 ## Installation
-Install this repository through HACS as a Dashboard custom repository.
 
-The repository keeps the existing filename `Water-Tank-Level-Card.js` so existing HACS/resource paths remain compatible.
+Install the repository through HACS as a Dashboard custom repository.
 
-## Your 1000 L water tank
+Add the card as:
 
 ```yaml
-type: custom:dosing-tank-card
-level_entity: sensor.esp8266_text_tank_water_level
-level_full: 100
-level_empty: 0
-capacity: 1000
-capacity_unit: "L"
-name: "Water Tank"
-liquid_color: "#3b82f6"
+type: custom:water-tank-card
+level_entity: sensor.water_level_sensors_tank_water_level
+distance_entity: sensor.water_level_sensors_tank_water_level_distance
+pump_entity: switch.borewell_p110
+capacity_liters: 1000
+name: Water Tank
 alert_threshold_percent: 24
-color_mode: level
-warn_threshold_percent: 50
-layout: columns
-show_chart: true
-last_update: changed
-show_settings: true
 ```
 
-## Upstream
-The card implementation is based on:
-https://github.com/ADNPolymerase/ha-dosing-tank-card
+The existing filename `Water-Tank-Level-Card.js` is retained for compatibility with the repository's HACS resource path.
 
-The upstream project is licensed under MIT.
+## Visual Editor
+
+The card provides a Home Assistant visual editor for configuring:
+
+- Water level, distance, pump, daily consumption, and 7-day consumption entities
+- Tank name and capacity
+- Layout
+- Tank width and height
+- Corner radius and accent color
+- Show/hide Source, Range, Level, and Today details
+- Low-water alert threshold
 
 ## ☕ Support the project
 
