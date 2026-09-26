@@ -61,7 +61,7 @@ The card provides a Home Assistant visual editor for configuring:
 
 ### Animated Preview
 
-<img src="https://raw.githubusercontent.com/DVishnuManiKanTh/Water-Tank-Level-Card/main/assets/water-tank-preview.gif" alt="Water Tank Level Card - Animated Preview" width="280">
+<img src="https://raw.githubusercontent.com/DVishnuManiKanTh/Water-Tank-Level-Card/main/https://raw.githubusercontent.com/DVishnuManiKanTh/Water-Tank-Level-Card/main/assets/lv_0_20260926170321.gif" alt="Water Tank Level Card - Animated Preview" width="280">
 
 ## ☕ Support the project
 
