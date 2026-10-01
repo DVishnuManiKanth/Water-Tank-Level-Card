@@ -21,6 +21,7 @@ const DEFAULT_CONFIG = {
   border_radius: 24,
   accent_color: "#2196f3",
   percentage_size: 27,
+  tank_glow: true,
   alert_threshold_percent: 24,
 };
 
@@ -138,6 +139,10 @@ class WaterTankCard extends HTMLElement {
               selector: { boolean: {} },
             },
             {
+              name: "tank_glow",
+              selector: { boolean: {} },
+            },
+            {
               name: "percentage_size",
               selector: {
                 number: {
@@ -188,6 +193,7 @@ class WaterTankCard extends HTMLElement {
           border_radius: "Corner radius",
           accent_color: "Accent color",
           glass_style: "Glass style",
+          tank_glow: "Tank glow",
           percentage_size: "Percentage size",
           show_source: "Show Source",
           show_range: "Show Range",
@@ -209,6 +215,7 @@ class WaterTankCard extends HTMLElement {
           tank_height: "Height of the animated water tank.",
           accent_color: "CSS color such as #2196f3.",
           glass_style: "Enable the glass-style card. Turn off for a normal Home Assistant card appearance.",
+          tank_glow: "Turn the outer glow around the water tank on or off.",
           percentage_size: "Size of the percentage shown inside the tank.",
           show_source: "Show or hide the Source row.",
           show_range: "Show or hide the Range row.",
@@ -244,6 +251,7 @@ class WaterTankCard extends HTMLElement {
       accent_color: "#2196f3",
       glass_style: true,
       percentage_size: 27,
+      tank_glow: true,
       show_source: true,
       show_range: true,
       show_level: true,
@@ -394,6 +402,7 @@ class WaterTankCard extends HTMLElement {
       c.accent_color,
       c.glass_style,
       c.percentage_size,
+      c.tank_glow,
       c.show_source,
       c.show_range,
       c.show_level,
@@ -410,6 +419,7 @@ class WaterTankCard extends HTMLElement {
     const tankHeight = Math.max(80, Number(c.tank_height) || 178);
     const accent = this._esc(c.accent_color || "#2196f3");
     const glassStyle = c.glass_style !== false;
+    const tankGlow = c.tank_glow !== false;
     const percentageSize = this._clamp(Number(c.percentage_size ?? 27), 12, 60);
     const fill = level;
     const distanceText = Number.isFinite(distance) ? this._fmt(distance, 0) + " cm" : "—";
@@ -459,7 +469,7 @@ class WaterTankCard extends HTMLElement {
         .hero { min-height:${Math.max(205, tankHeight + 20)}px;display:flex;align-items:center;justify-content:center;position:relative;overflow:visible;padding:7px; }
         .tank-wrap { position:relative;width:${tankWidth + 20}px;height:${tankHeight}px; }
         .tank { width:${tankWidth}px;height:${tankHeight}px;left:18px;right:auto;top:0;bottom:auto; }
-        .tank { position:absolute;inset:0;overflow:hidden;border-radius:22px 22px 18px 18px;border:2px solid color-mix(in srgb,var(--primary-text-color) 22%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--primary-text-color) 10%,transparent),color-mix(in srgb,var(--primary-text-color) 3%,transparent) 38%,color-mix(in srgb,var(--primary-text-color) 7%,transparent));box-shadow:inset 8px 0 15px color-mix(in srgb,var(--primary-text-color) 5%,transparent),inset -8px 0 15px color-mix(in srgb,var(--primary-text-color) 12%,transparent),0 10px 22px color-mix(in srgb,var(--primary-text-color) 18%,transparent); }
+        .tank { position:absolute;inset:0;overflow:hidden;border-radius:22px 22px 18px 18px;border:2px solid color-mix(in srgb,var(--primary-text-color) 22%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--primary-text-color) 10%,transparent),color-mix(in srgb,var(--primary-text-color) 3%,transparent) 38%,color-mix(in srgb,var(--primary-text-color) 7%,transparent));box-shadow:inset 8px 0 15px color-mix(in srgb,var(--primary-text-color) 5%,transparent),inset -8px 0 15px color-mix(in srgb,var(--primary-text-color) 12%,transparent)${tankGlow ? ',0 10px 22px color-mix(in srgb,var(--primary-text-color) 18%,transparent)' : ''}; }
         .tank::before { content:"";position:absolute;left:10%;right:10%;top:5px;height:7px;border-radius:50%;border:1px solid rgba(255,255,255,.24);background:color-mix(in srgb,var(--primary-text-color) 5%,transparent);z-index:5; }
         .water { position:absolute;left:0;right:0;bottom:0;height:${fill}%;background:linear-gradient(180deg,rgba(100,181,246,.92),rgba(33,150,243,.78) 45%,rgba(13,71,161,.88));transition:height 1.2s cubic-bezier(.2,.7,.2,1);box-shadow:0 -5px 18px rgba(33,150,243,.22); }
         .water::before { content:"";position:absolute;left:-12%;top:-6px;width:124%;height:13px;border-radius:50%;background:rgba(170,225,255,.62);box-shadow:0 0 10px rgba(120,205,255,.45);animation:wave 3s ease-in-out infinite; }
