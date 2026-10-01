@@ -134,6 +134,10 @@ class WaterTankCard extends HTMLElement {
               selector: { text: {} },
             },
             {
+              name: "glass_style",
+              selector: { boolean: {} },
+            },
+            {
               name: "percentage_size",
               selector: {
                 number: {
@@ -183,6 +187,7 @@ class WaterTankCard extends HTMLElement {
           tank_height: "Tank height",
           border_radius: "Corner radius",
           accent_color: "Accent color",
+          glass_style: "Glass style",
           percentage_size: "Percentage size",
           show_source: "Show Source",
           show_range: "Show Range",
@@ -203,6 +208,7 @@ class WaterTankCard extends HTMLElement {
           tank_width: "Width of the animated water tank.",
           tank_height: "Height of the animated water tank.",
           accent_color: "CSS color such as #2196f3.",
+          glass_style: "Enable the glass-style card. Turn off for a normal Home Assistant card appearance.",
           percentage_size: "Size of the percentage shown inside the tank.",
           show_source: "Show or hide the Source row.",
           show_range: "Show or hide the Range row.",
@@ -236,6 +242,7 @@ class WaterTankCard extends HTMLElement {
       tank_height: 178,
       border_radius: 24,
       accent_color: "#2196f3",
+      glass_style: true,
       percentage_size: 27,
       show_source: true,
       show_range: true,
@@ -385,6 +392,7 @@ class WaterTankCard extends HTMLElement {
       c.tank_height,
       c.border_radius,
       c.accent_color,
+      c.glass_style,
       c.percentage_size,
       c.show_source,
       c.show_range,
@@ -401,6 +409,7 @@ class WaterTankCard extends HTMLElement {
     const tankWidth = Math.max(50, Number(c.tank_width) || 105);
     const tankHeight = Math.max(80, Number(c.tank_height) || 178);
     const accent = this._esc(c.accent_color || "#2196f3");
+    const glassStyle = c.glass_style !== false;
     const percentageSize = this._clamp(Number(c.percentage_size ?? 27), 12, 60);
     const fill = level;
     const distanceText = Number.isFinite(distance) ? this._fmt(distance, 0) + " cm" : "—";
@@ -433,9 +442,9 @@ class WaterTankCard extends HTMLElement {
         :host { display:block; --wt-accent:${accent}; --wt-bg:var(--ha-card-background,var(--card-background-color,#fff)); --wt-panel:color-mix(in srgb,var(--primary-text-color) 5%,transparent); --wt-line:color-mix(in srgb,var(--primary-text-color) 12%,transparent); --wt-text:var(--primary-text-color,#212121); --wt-muted:var(--secondary-text-color,#6b7280); }
         * { box-sizing:border-box; }
         ha-card { overflow:hidden; height:${this._esc(c.card_height || "auto")};
-          min-height:0; border-radius:${radius}px; padding:0; color:var(--wt-text);
-          background:radial-gradient(circle at 8% 0%,color-mix(in srgb,var(--primary-text-color) 6%,transparent),transparent 30%),radial-gradient(circle at 100% 100%,color-mix(in srgb,var(--wt-accent) 10%,transparent),transparent 38%),var(--wt-bg);
-          border:1px solid var(--wt-line); box-shadow:0 10px 28px color-mix(in srgb,var(--primary-text-color) 14%,transparent),inset 0 1px 0 color-mix(in srgb,var(--primary-text-color) 7%,transparent); }
+          min-height:0; border-radius:${glassStyle ? radius : "var(--ha-card-border-radius,12px)"}; padding:0; color:var(--wt-text);
+          background:${glassStyle ? "radial-gradient(circle at 8% 0%,color-mix(in srgb,var(--primary-text-color) 6%,transparent),transparent 30%),radial-gradient(circle at 100% 100%,color-mix(in srgb,var(--wt-accent) 10%,transparent),transparent 38%),var(--wt-bg)" : "var(--ha-card-background,var(--card-background-color,#fff))"};
+          border:${glassStyle ? "1px solid var(--wt-line)" : "1px solid var(--ha-card-border-color,var(--divider-color,transparent))"}; box-shadow:${glassStyle ? "0 10px 28px color-mix(in srgb,var(--primary-text-color) 14%,transparent),inset 0 1px 0 color-mix(in srgb,var(--primary-text-color) 7%,transparent)" : "var(--ha-card-box-shadow,none)"}; }
         .shell { padding:10px 12px; }
         .header { display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px; }
         .title { font-size:17px;font-weight:800;line-height:1.1; }
