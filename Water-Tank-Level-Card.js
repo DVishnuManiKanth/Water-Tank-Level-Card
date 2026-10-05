@@ -378,7 +378,9 @@ class WaterTankCard extends HTMLElement {
     const hasDailyConsumption = !!c.daily_consumption_entity && Number.isFinite(Number(dailyConsumptionState?.state));
     const hasSevenDayConsumption = !!c.seven_day_consumption_entity && Number.isFinite(Number(sevenDayConsumptionState?.state));
 
-    const level = this._clamp(this._number(c.level_entity), 0, 100);
+    const rawLevel = levelState?.state;
+    const sensorUnavailable = !levelState || ["unavailable", "unknown", "none", ""].includes(String(rawLevel ?? "").toLowerCase());
+    const level = sensorUnavailable ? 0 : this._clamp(this._number(c.level_entity), 0, 100);
     const capacity = Math.max(1, Number(c.capacity_liters) || 1000);
     const liters = capacity * level / 100;
     const distance = Number(distanceState?.state);
@@ -388,6 +390,7 @@ class WaterTankCard extends HTMLElement {
 
     const signature = [
       level,
+      sensorUnavailable,
       distanceState?.state,
       pumpState?.state,
       dailyConsumptionState?.state,
@@ -433,7 +436,7 @@ class WaterTankCard extends HTMLElement {
     const showLevel = c.show_level !== false;
     const showToday = c.show_today !== false && hasDailyConsumption;
     const alertThreshold = this._clamp(Number(c.alert_threshold_percent ?? 24), 0, 100);
-    const lowWater = level <= alertThreshold;
+    const lowWater = !sensorUnavailable && level <= alertThreshold;
 
     const statusText = pumpState ? (pumpOn ? "Pump ON" : "Pump OFF") : "Pump —";
     const statusClass = pumpOn ? "pump-on" : "pump-off";
@@ -460,6 +463,8 @@ class WaterTankCard extends HTMLElement {
         .title { font-size:17px;font-weight:800;line-height:1.1; }
         .subtitle { color:var(--wt-muted);font-size:9px;margin-top:3px; }
         .status { display:flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;border:1px solid var(--wt-line);background:var(--wt-panel);font-size:9px;font-weight:800;white-space:nowrap; }
+         .sensor-unavailable { color:#ffb4ab;border-color:rgba(255,82,82,.35);background:rgba(255,82,82,.10); }
+        .sensor-unavailable .dot { background:#ff5252;box-shadow:0 0 8px rgba(255,82,82,.65);animation:pulse 1.2s infinite; }
         .low-water { color:#ffb4ab;border-color:rgba(255,82,82,.35);background:rgba(255,82,82,.10); }
         .low-water .dot { background:#ff5252;box-shadow:0 0 8px rgba(255,82,82,.65);animation:pulse 1.2s infinite; }
         .dot { width:6px;height:6px;border-radius:50%;background:#8793a1; }
@@ -509,8 +514,8 @@ class WaterTankCard extends HTMLElement {
               <div class="title">${name}</div>
               <div class="subtitle">Live tank level • ${this._fmt(capacity, 0)} L capacity</div>
             </div>
-            <div class="status ${statusClass} ${lowWater ? "low-water" : ""}">
-              <span class="dot"></span>${lowWater ? "Low Water" : statusText}
+            <div class="status ${sensorUnavailable ? "sensor-unavailable" : statusClass + (lowWater ? " low-water" : "")}">
+              <span class="dot"></span>${sensorUnavailable ? "Sensor Unavailable" : lowWater ? "Low Water" : statusText}
             </div>
           </div>
 
@@ -520,7 +525,7 @@ class WaterTankCard extends HTMLElement {
                 <div class="tank">
                   <div class="water">${bubbles}</div>
                   <div class="tank-value">
-                    <div class="percent">${this._fmt(Math.round(level), 0)}%</div>
+                    <div class="percent">${sensorUnavailable ? "Sensor Unavailable" : this._fmt(Math.round(level), 0) + "%"}</div>
                   </div>
                 </div>
               </div>
@@ -534,12 +539,12 @@ class WaterTankCard extends HTMLElement {
               <div class="settings">
 ${showSource ? `<div class="setting"><span>Source</span><b>Water Level Sensor</b></div>` : ""}
                 ${showRange ? `<div class="setting"><span>Range</span><b>0 → 100%</b></div>` : ""}
-                ${showLevel ? `<div class="setting"><span>Level</span><b>${this._fmt(Math.round(level), 0)}%</b></div>` : ""}
+                ${showLevel ? `<div class="setting"><span>Level</span><b>${sensorUnavailable ? "Unavailable" : this._fmt(Math.round(level), 0) + "%"}</b></div>` : ""}
                 ${showToday ? `<div class="setting"><span>Today</span><b>${today} ${dailyUnit}</b></div>` : ""}
               </div>
             </section>
           </div>
-          <div class="bottom"><span><strong>${this._fmt(liters, 0)}</strong> Liter left</span><span id="updated-time">Updated ${updated}</span></div>
+          <div class="bottom"><span>${sensorUnavailable ? "<strong>—</strong> Liter left" : "<strong>" + this._fmt(liters, 0) + "</strong> Liter left"}</span><span id="updated-time">Updated ${updated}</span></div>
                 </div>
         </div>
       </ha-card>
