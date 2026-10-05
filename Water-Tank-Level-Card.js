@@ -482,6 +482,7 @@ class WaterTankCard extends HTMLElement {
         .bubble { position:absolute;bottom:4%;border-radius:50%;background:color-mix(in srgb,var(--primary-text-color) 35%,transparent);opacity:0;animation:rise 5s linear infinite;z-index:2; }
         .tank-value { position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 2px 8px color-mix(in srgb,var(--primary-text-color) 30%,transparent); }
         .percent { font-size:${percentageSize}px;font-weight:900;line-height:1; }
+        .percent.unavailable-icon { color:#ff5252;font-size:${Math.max(percentageSize, 30)}px;text-shadow:0 0 10px rgba(255,82,82,.65); }
         .liters { margin-top:4px;font-size:10px;font-weight:700;opacity:.92; }
         .side { min-width:0;display:flex;flex-direction:column;gap:7px; }
         .top-metrics { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px; }
@@ -525,7 +526,7 @@ class WaterTankCard extends HTMLElement {
                 <div class="tank">
                   <div class="water">${bubbles}</div>
                   <div class="tank-value">
-                    <div class="percent">${sensorUnavailable ? "⚠" : this._fmt(Math.round(level), 0) + "%"}</div>
+                    <div class="percent ${sensorUnavailable ? "unavailable-icon" : ""}">${sensorUnavailable ? "⚠" : this._fmt(Math.round(level), 0) + "%"}</div>
                   </div>
                 </div>
               </div>
