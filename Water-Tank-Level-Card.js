@@ -515,7 +515,7 @@ class WaterTankCard extends HTMLElement {
               <div class="subtitle">Live tank level • ${this._fmt(capacity, 0)} L capacity</div>
             </div>
             <div class="status ${sensorUnavailable ? "sensor-unavailable" : statusClass + (lowWater ? " low-water" : "")}">
-              <span class="dot"></span>${sensorUnavailable ? "Sensor Unavailable" : lowWater ? "Low Water" : statusText}
+              <span class="dot"></span>${sensorUnavailable ? "⚠ Unavailable" : lowWater ? "Low Water" : statusText}
             </div>
           </div>
 
@@ -525,7 +525,7 @@ class WaterTankCard extends HTMLElement {
                 <div class="tank">
                   <div class="water">${bubbles}</div>
                   <div class="tank-value">
-                    <div class="percent">${sensorUnavailable ? "Sensor Unavailable" : this._fmt(Math.round(level), 0) + "%"}</div>
+                    <div class="percent">${sensorUnavailable ? "⚠" : this._fmt(Math.round(level), 0) + "%"}</div>
                   </div>
                 </div>
               </div>
@@ -539,7 +539,7 @@ class WaterTankCard extends HTMLElement {
               <div class="settings">
 ${showSource ? `<div class="setting"><span>Source</span><b>Water Level Sensor</b></div>` : ""}
                 ${showRange ? `<div class="setting"><span>Range</span><b>0 → 100%</b></div>` : ""}
-                ${showLevel ? `<div class="setting"><span>Level</span><b>${sensorUnavailable ? "Unavailable" : this._fmt(Math.round(level), 0) + "%"}</b></div>` : ""}
+                ${showLevel ? `<div class="setting"><span>Level</span><b>${sensorUnavailable ? "⚠" : this._fmt(Math.round(level), 0) + "%"}</b></div>` : ""}
                 ${showToday ? `<div class="setting"><span>Today</span><b>${today} ${dailyUnit}</b></div>` : ""}
               </div>
             </section>
